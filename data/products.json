@@ -1,0 +1,64 @@
+[
+  {
+    "slug": "bascula-inteligente",
+    "title": "B\u00e1scula Inteligente Vitafit Smart",
+    "priceCOP": 129000,
+    "oldPriceCOP": 148350,
+    "image": "/demo/demo2.svg",
+    "excerpt": "Monitorea peso y composici\u00f3n corporal con app.",
+    "stock": 12,
+    "tags": [
+      "salud",
+      "top"
+    ]
+  },
+  {
+    "slug": "tira-led-rgb-musica",
+    "title": "Tira LED RGB 30m con App + Sincronizaci\u00f3n Musical",
+    "priceCOP": 89000,
+    "image": "/demo/demo1.svg",
+    "excerpt": "16M de colores y control por app con escenas.",
+    "stock": 20,
+    "tags": [
+      "hogar",
+      "novedad"
+    ]
+  },
+  {
+    "slug": "aspiradora-auto",
+    "title": "Aspiradora para Carro 12V + Kit",
+    "priceCOP": 109000,
+    "oldPriceCOP": 129000,
+    "image": "/demo/demo3.svg",
+    "excerpt": "Potente y compacta. Incluye accesorios.",
+    "stock": 8,
+    "tags": [
+      "carro"
+    ]
+  },
+  {
+    "slug": "parlante-bluetooth",
+    "title": "Parlante Bluetooth Mini Pro",
+    "priceCOP": 79000,
+    "image": "/demo/demo4.svg",
+    "excerpt": "Sonido n\u00edtido y bater\u00eda de larga duraci\u00f3n.",
+    "stock": 30,
+    "tags": [
+      "audio",
+      "novedad"
+    ]
+  },
+  {
+    "slug": "smartwatch-fit",
+    "title": "Smartwatch Fit con GPS",
+    "priceCOP": 259000,
+    "oldPriceCOP": 289000,
+    "image": "/demo/demo5.svg",
+    "excerpt": "Monitoreo deportivo, salud y notificaciones.",
+    "stock": 10,
+    "tags": [
+      "wearables",
+      "top"
+    ]
+  }
+]

@@ -1,0 +1,8 @@
+# dependencias
+node_modules
+
+# compilados de Next.js
+.next
+
+# variables de entorno
+.env
