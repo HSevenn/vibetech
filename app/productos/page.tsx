@@ -1,6 +1,13 @@
 
 // app/productos/page.tsx
 import { fetchProducts } from '@/lib/products';
+function formatPrice(cents: number) {
+  return cents.toLocaleString("es-CO", {
+    style: "currency",
+    currency: "COP",
+    minimumFractionDigits: 0,
+  });
+}
 
 export default async function ProductosPage() {
   const products = await fetchProducts();
@@ -23,16 +30,16 @@ export default async function ProductosPage() {
             <h3 className="font-semibold">{p.name}</h3>
             <p className="text-sm opacity-80 line-clamp-2">{p.description}</p>
 
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-lg font-bold">
-                ${(p.price_cents / 100).toLocaleString()}
-              </span>
-              {p.old_price_cents && (
-                <span className="text-sm line-through opacity-60">
-                  ${(p.old_price_cents / 100).toLocaleString()}
-                </span>
-              )}
-            </div>
+           <div className="mt-2 flex items-baseline gap-2">
+  <span className="text-lg font-bold">
+    {formatPrice(p.price_cents)}
+  </span>
+  {p.old_price_cents && (
+    <span className="text-sm line-through opacity-60">
+      {formatPrice(p.old_price_cents)}
+    </span>
+  )}
+</div>
           </article>
         ))}
       </div>
