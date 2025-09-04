@@ -1,3 +1,4 @@
+import Link from 'next/link';
 
 // app/productos/page.tsx
 import { fetchProducts } from '@/lib/products';
@@ -18,7 +19,7 @@ export default async function ProductosPage() {
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {products.map(p => (
-          <article key={p.id} className="rounded-xl border p-4">
+          <Link key={p.id} href={`/productos/${p.slug}`} className="rounded-xl border p-4 block hover:bg-neutral-900/40">
             {p.imageUrl && (
               <img
                 src={p.imageUrl}
@@ -40,7 +41,7 @@ export default async function ProductosPage() {
     </span>
   )}
 </div>
-          </article>
+          </Link>
         ))}
       </div>
     </main>

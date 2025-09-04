@@ -1,11 +1,13 @@
 
 import site from '@/data/site.json';
-import products from '@/data/products.json';
-import HeroSlider from '@/components/HeroSlider';
-import ProductCard from '@/components/ProductCard';
-import Link from 'next/link';
 
-export default function Home(){
+import HeroSlider from '@/components/HeroSlider';
+
+import Link from 'next/link';
+import { fetchLatestProducts, publicUrl } from '@/lib/products';
+
+export default async function Home(){
+  const latest = await fetchLatestProducts(6);
   return (
     <div className="grid gap-10 lg:grid-cols-2">
       <section>
@@ -26,7 +28,16 @@ export default function Home(){
       <section className="lg:col-span-2">
         <h2 className="mb-4 text-xl font-semibold">Productos</h2>
         <div className="grid-products">
-          {(products as any[]).map((p:any) => <ProductCard key={p.slug} p={p} />)}
+          {latest.map((p: any) => {
+            const cover = Array.isArray(p.images) && p.images[0] ? publicUrl(p.images[0]) : '';
+            return (
+              <Link key={p.id} href={`/productos/${p.slug}`} className="rounded-xl border p-4 block hover:bg-neutral-900/40">
+                {cover && <img src={cover} alt={p.name} className="aspect-[4/3] w-full object-cover rounded-md mb-3" />}
+                <h3 className="font-semibold">{p.name}</h3>
+                <p className="text-sm opacity-80 line-clamp-2">{p.description}</p>
+              </Link>
+            );
+          })}
         </div>
       </section>
     </div>

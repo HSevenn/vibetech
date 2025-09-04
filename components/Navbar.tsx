@@ -13,6 +13,10 @@ export default function Navbar(){
           <Link href="/productos" className="btn btn-outline">Productos</Link>
           <Link href="/contacto" className="btn btn-outline">Contacto</Link>
           <ThemeToggle />
+        <form action="/buscar" className="hidden md:flex items-center gap-2">
+            <input name="q" placeholder="Buscar..." className="bg-neutral-900 rounded px-3 py-1 text-sm" />
+            <button className="text-sm opacity-80 hover:opacity-100">🔍</button>
+          </form>
         </nav>
       </div>
     </header>
