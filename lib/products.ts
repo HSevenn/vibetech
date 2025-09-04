@@ -1,8 +1,7 @@
-
 // lib/products.ts
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './supabase';
 
-export type Product = {
+export type DbProduct = {
   id: string;
   slug: string;
   name: string;
@@ -10,72 +9,59 @@ export type Product = {
   price_cents: number;
   old_price_cents: number | null;
   stock: number;
-  images: string[]; // paths en Storage (products/...)
+  images: string[];
   is_active: boolean;
   created_at: string;
 };
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(url, anon);
+export type UiProduct = DbProduct & {
+  imageUrl?: string;
+  imageUrls?: string[];
+};
 
-// Helpers
-export function publicUrl(path: string) {
-  const clean = path.startsWith('/') ? path.slice(1) : path;
-  return `${url}/storage/v1/object/public/${clean}`;
+export function publicUrl(path?: string) {
+  if (!path) return undefined;
+  const { data } = supabase.storage.from('products').getPublicUrl(path);
+  return data.publicUrl;
 }
 
-// Listado completo
-export async function fetchProducts(): Promise<(Product & { imageUrl?: string })[]> {
+export function mapProduct(p: DbProduct): UiProduct {
+  const first = Array.isArray(p.images) && p.images.length ? p.images[0] : undefined;
+  return {
+    ...p,
+    imageUrl: publicUrl(first),
+    imageUrls: Array.isArray(p.images) ? p.images.map(publicUrl).filter(Boolean) as string[] : []
+  };
+}
+
+export async function fetchProducts(): Promise<UiProduct[]> {
   const { data, error } = await supabase
     .from('products')
     .select('*')
     .eq('is_active', true)
     .order('created_at', { ascending: false });
-
   if (error) throw error;
-
-  return (data ?? []).map(p => ({
-    ...p,
-    imageUrl: Array.isArray(p.images) && p.images[0] ? publicUrl(p.images[0]) : undefined,
-  })) as any;
+  return (data as DbProduct[]).map(mapProduct);
 }
 
-// Detalle por slug
-export async function fetchProductBySlug(slug: string): Promise<(Product & { imageUrl?: string }) | null> {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .eq('slug', slug)
-    .limit(1)
-    .single();
-
-  if (error) {
-    if (error.code === 'PGRST116') return null;
-    throw error;
-  }
-
-  if (!data) return null;
-
-  return {
-    ...(data as Product),
-    imageUrl: Array.isArray(data.images) && data.images[0] ? publicUrl(data.images[0]) : undefined,
-  };
-}
-
-// Últimos 8 para la Home
-export async function fetchLatestProducts(): Promise<(Product & { imageUrl?: string })[]> {
+export async function fetchLatestProducts(limit = 3): Promise<UiProduct[]> {
   const { data, error } = await supabase
     .from('products')
     .select('*')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
-    .limit(8);
-
+    .limit(limit);
   if (error) throw error;
+  return (data as DbProduct[]).map(mapProduct);
+}
 
-  return (data ?? []).map(p => ({
-    ...p,
-    imageUrl: Array.isArray(p.images) && p.images[0] ? publicUrl(p.images[0]) : undefined,
-  })) as any;
+export async function fetchProductBySlug(slug: string): Promise<UiProduct | null> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('slug', slug)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? mapProduct(data as DbProduct) : null;
 }
