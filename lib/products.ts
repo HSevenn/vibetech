@@ -1,5 +1,6 @@
+
 // lib/products.ts
-import { supabase } from './supabase';
+import { createClient } from '@supabase/supabase-js';
 
 export type Product = {
   id: string;
@@ -9,18 +10,22 @@ export type Product = {
   price_cents: number;
   old_price_cents: number | null;
   stock: number;
-  images: string[] | null;
-  is_active: boolean | null;
-  created_at?: string;
+  images: string[]; // paths en Storage (products/...)
+  is_active: boolean;
+  created_at: string;
 };
 
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(url, anon);
+
+// Helpers
 export function publicUrl(path: string) {
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!base) throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
-  const clean = path.replace(/^\//, '');
-  return `${base}/storage/v1/object/public/${clean}`;
+  const clean = path.startsWith('/') ? path.slice(1) : path;
+  return `${url}/storage/v1/object/public/${clean}`;
 }
 
+// Listado completo
 export async function fetchProducts(): Promise<(Product & { imageUrl?: string })[]> {
   const { data, error } = await supabase
     .from('products')
@@ -30,39 +35,47 @@ export async function fetchProducts(): Promise<(Product & { imageUrl?: string })
 
   if (error) throw error;
 
-  return (data || []).map((p: any) => ({
+  return (data ?? []).map(p => ({
     ...p,
-    imageUrl: p.images?.[0] ? publicUrl(p.images[0]) : undefined,
-  }));
+    imageUrl: Array.isArray(p.images) && p.images[0] ? publicUrl(p.images[0]) : undefined,
+  })) as any;
 }
 
-export async function fetchLatestProducts(limit: number = 6): Promise<(Product & { imageUrl?: string })[]> {
+// Detalle por slug
+export async function fetchProductBySlug(slug: string): Promise<(Product & { imageUrl?: string }) | null> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('slug', slug)
+    .limit(1)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+
+  if (!data) return null;
+
+  return {
+    ...(data as Product),
+    imageUrl: Array.isArray(data.images) && data.images[0] ? publicUrl(data.images[0]) : undefined,
+  };
+}
+
+// Últimos 8 para la Home
+export async function fetchLatestProducts(): Promise<(Product & { imageUrl?: string })[]> {
   const { data, error } = await supabase
     .from('products')
     .select('*')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
-    .limit(limit);
+    .limit(8);
 
   if (error) throw error;
 
-  return (data || []).map((p: any) => ({
+  return (data ?? []).map(p => ({
     ...p,
-    imageUrl: p.images?.[0] ? publicUrl(p.images[0]) : undefined,
-  }));
-}
-
-export async function fetchProductBySlug(slug: string): Promise<Product & { imageUrl?: string }> {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .eq('slug', slug)
-    .single();
-
-  if (error) throw error;
-
-  return {
-    ...(data as any),
-    imageUrl: (data as any)?.images?.[0] ? publicUrl((data as any).images[0]) : undefined,
-  };
+    imageUrl: Array.isArray(p.images) && p.images[0] ? publicUrl(p.images[0]) : undefined,
+  })) as any;
 }
