@@ -1,77 +1,56 @@
-import Link from 'next/link';
-import { fetchProductBySlug, publicUrl } from '@/lib/products';
+import { fetchProductBySlug } from '@/lib/products';
+import { headers } from 'next/headers';
 
-function formatCOP(cents: number) {
-  const pesos = cents / 100;
-  return pesos.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+function formatPrice(cents: number) {
+  return cents.toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+  });
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const p = await fetchProductBySlug(params.slug);
-  if (!p) return { title: 'Producto no encontrado • VibeTech' };
-  return { title: `${p.name} • VibeTech` };
+function getBaseUrl() {
+  const env = process.env.NEXT_PUBLIC_SITE_URL;
+  if (env) return env.replace(/\/$/, '');
+  const h = headers();
+  const host = h.get('host') || 'localhost:3000';
+  const proto = (h.get('x-forwarded-proto') || 'https');
+  return `${proto}://${host}`;
 }
 
-export default async function ProductPage({ params }: { params: { slug: string } }) {
-  const p = await fetchProductBySlug(params.slug);
-  if (!p) {
-    return <main className="container mx-auto px-4 py-10">Producto no encontrado</main>;
+export default async function ProductDetail({ params }: { params: { slug: string } }) {
+  const product = await fetchProductBySlug(params.slug);
+  if (!product) {
+    return <main className="container mx-auto px-4 py-10"><h1>Producto no encontrado</h1></main>;
   }
 
-  const images: string[] = Array.isArray(p.images) ? p.images : [];
-  const urls = images.map((path) => publicUrl(path) || '');
-  const main = urls[0] || '';
-
-  const pageUrl = `${process.env.NEXT_PUBLIC_BASE_URL || ''}/productos/${p.slug}` || '';
-  const shareText = encodeURIComponent(`${p.name} - ${formatCOP(p.price_cents)} en VibeTech`);
-  const shareUrl = encodeURIComponent(pageUrl);
+  const url = `${getBaseUrl()}/productos/${product.slug}`;
+  const shareText = encodeURIComponent(`${product.name} – ${formatPrice(product.price_cents)} en VibeTech`);
+  const shareUrl = encodeURIComponent(url);
 
   return (
     <main className="container mx-auto px-4 py-10">
-      <Link href="/productos" className="text-sm opacity-70 hover:opacity-100">← Volver</Link>
-
-      <div className="grid gap-8 md:grid-cols-2 mt-6">
+      <div className="grid gap-8 md:grid-cols-2">
         <div>
-          {main ? (
-            <img src={main} alt={p.name} className="w-full rounded-lg object-cover" />
+          {product.imageUrl ? (
+            <img src={product.imageUrl} alt={product.name} className="w-full rounded-lg object-cover" />
           ) : (
-            <div className="aspect-[4/3] w-full rounded-lg bg-neutral-800" />
-          )}
-
-          {urls.length > 1 && (
-            <div className="mt-3 grid grid-cols-4 gap-2">
-              {urls.slice(1).map((u, i) => (
-                <img key={i} src={u} alt={`${p.name} ${i + 2}`} className="w-full aspect-square object-cover rounded" />
-              ))}
-            </div>
+            <div className="aspect-[4/3] w-full bg-neutral-800 rounded" />
           )}
         </div>
-
         <div>
-          <h1 className="text-3xl font-bold">{p.name}</h1>
-          <p className="mt-2 opacity-80">{p.description}</p>
-
-          <div className="mt-4 flex items-baseline gap-3">
-            <span className="text-2xl font-bold">{formatCOP(p.price_cents)}</span>
-            {p.old_price_cents ? (
-              <span className="line-through opacity-60">{formatCOP(p.old_price_cents)}</span>
-            ) : null}
+          <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
+          <p className="opacity-80 mb-4">{product.description}</p>
+          <div className="flex items-baseline gap-3 mb-6">
+            <span className="text-2xl font-bold">{formatPrice(product.price_cents)}</span>
+            {!!product.old_price_cents && (
+              <span className="line-through opacity-60">{formatPrice(product.old_price_cents)}</span>
+            )}
           </div>
-
-          <p className="mt-2 text-sm opacity-70">Stock: {p.stock}</p>
-
-          <div className="mt-6 flex flex-wrap gap-3">
-            <a className="rounded bg-neutral-800 px-3 py-2 text-sm"
-               href={`https://api.whatsapp.com/send?text=${shareText}%20${shareUrl}`}
-               target="_blank" rel="noopener noreferrer">WhatsApp</a>
-            <a className="rounded bg-neutral-800 px-3 py-2 text-sm"
-               href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`}
-               target="_blank" rel="noopener noreferrer">Facebook</a>
-            <a className="rounded bg-neutral-800 px-3 py-2 text-sm"
-               href={`https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`}
-               target="_blank" rel="noopener noreferrer">X</a>
-            <button onClick={() => navigator.clipboard.writeText(pageUrl)}
-              className="rounded bg-neutral-800 px-3 py-2 text-sm">Copiar link</button>
+          <div className="flex gap-3">
+            <a href={`https://wa.me/?text=${shareText}%20${shareUrl}`} target="_blank">WhatsApp</a>
+            <a href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`} target="_blank">Facebook</a>
+            <a href={`https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`} target="_blank">X</a>
           </div>
         </div>
       </div>
