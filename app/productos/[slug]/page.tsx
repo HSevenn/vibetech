@@ -1,73 +1,56 @@
-// app/productos/[slug]/page.tsx
-import Link from 'next/link';
 import { fetchProductBySlug } from '@/lib/products';
+import { headers } from 'next/headers';
 
 function formatPrice(cents: number) {
-  return (cents).toLocaleString('es-CO', {
+  return cents.toLocaleString('es-CO', {
     style: 'currency',
     currency: 'COP',
     minimumFractionDigits: 0,
   });
 }
 
+function getBaseUrl() {
+  const env = process.env.NEXT_PUBLIC_SITE_URL;
+  if (env) return env.replace(/\/$/, '');
+  const h = headers();
+  const host = h.get('host') || 'localhost:3000';
+  const proto = (h.get('x-forwarded-proto') || 'https');
+  return `${proto}://${host}`;
+}
+
 export default async function ProductDetail({ params }: { params: { slug: string } }) {
   const product = await fetchProductBySlug(params.slug);
   if (!product) {
-    return (
-      <main className="container mx-auto px-4 py-10">
-        <p>Producto no encontrado.</p>
-        <Link className="mt-4 inline-flex rounded-md border px-4 py-2" href="/productos">Volver</Link>
-      </main>
-    );
+    return <main className="container mx-auto px-4 py-10"><h1>Producto no encontrado</h1></main>;
   }
 
-  const image = product.imageUrls?.[0] ?? product.imageUrl;
-  const pageUrl = `${process.env.NEXT_PUBLIC_SITE_URL || ''}/productos/${product.slug}`;
-
-  const wa = `https://wa.me/573001234567?text=${encodeURIComponent(`Hola, me interesa: ${product.name} - ${pageUrl}`)}`;
-  const fb = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`;
-  const tw = `https://twitter.com/intent/tweet?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent(product.name)}`;
-  const ig = `https://www.instagram.com/?url=${encodeURIComponent(pageUrl)}`;
+  const url = `${getBaseUrl()}/productos/${product.slug}`;
+  const shareText = encodeURIComponent(`${product.name} – ${formatPrice(product.price_cents)} en VibeTech`);
+  const shareUrl = encodeURIComponent(url);
 
   return (
     <main className="container mx-auto px-4 py-10">
-      <div className="grid lg:grid-cols-2 gap-8 items-start">
-        <div className="rounded-xl overflow-hidden border bg-black/10">
-          {image ? (
-            <img src={image} alt={product.name} className="w-full h-auto object-cover" />
+      <div className="grid gap-8 md:grid-cols-2">
+        <div>
+          {product.imageUrl ? (
+            <img src={product.imageUrl} alt={product.name} className="w-full rounded-lg object-cover" />
           ) : (
-            <div className="aspect-[4/3] w-full" />
+            <div className="aspect-[4/3] w-full bg-neutral-800 rounded" />
           )}
         </div>
-
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold">{product.name}</h1>
-          <p className="mt-2 text-base opacity-80">{product.description}</p>
-
-          <div className="mt-4 flex items-baseline gap-3">
-            <span className="text-2xl font-semibold">{formatPrice(product.price_cents)}</span>
+          <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
+          <p className="opacity-80 mb-4">{product.description}</p>
+          <div className="flex items-baseline gap-3 mb-6">
+            <span className="text-2xl font-bold">{formatPrice(product.price_cents)}</span>
             {!!product.old_price_cents && (
-              <span className="text-base line-through opacity-60">{formatPrice(product.old_price_cents)}</span>
+              <span className="line-through opacity-60">{formatPrice(product.old_price_cents)}</span>
             )}
           </div>
-
-          <div className="mt-5 flex gap-3">
-            <a className="rounded-md bg-white text-black px-4 py-2 font-medium" href={wa} target="_blank">Comprar por WhatsApp</a>
-            <Link className="rounded-md border px-4 py-2 font-medium" href="/productos">Volver</Link>
-          </div>
-
-          {/* Botones sociales transparentes */}
-          <div className="mt-6 flex flex-wrap gap-3">
-            <a href={wa} target="_blank" className="rounded-md border px-4 py-2">WhatsApp</a>
-            <a href={fb} target="_blank" className="rounded-md border px-4 py-2">Facebook</a>
-            <a href={tw} target="_blank" className="rounded-md border px-4 py-2">X</a>
-            <a href={ig} target="_blank" className="rounded-md border px-4 py-2">Instagram</a>
-            <button
-              onClick={() => navigator.clipboard?.writeText(pageUrl)}
-              className="rounded-md border px-4 py-2"
-            >
-              Copiar link
-            </button>
+          <div className="flex gap-3">
+            <a href={`https://wa.me/?text=${shareText}%20${shareUrl}`} target="_blank">WhatsApp</a>
+            <a href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`} target="_blank">Facebook</a>
+            <a href={`https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`} target="_blank">X</a>
           </div>
         </div>
       </div>

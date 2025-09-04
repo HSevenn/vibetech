@@ -7,7 +7,7 @@ export default function AdminPage() {
     <main className="container mx-auto px-4 py-10">
       <h1 className="text-3xl font-bold mb-6">Admin Productos</h1>
 
-      <form action={async (fd) => { await createProduct(fd) }} className="grid gap-3 mb-10" encType="multipart/form-data">
+      <form action={createProduct} className="grid gap-3 mb-10" encType="multipart/form-data">
         <input name="name" placeholder="Nombre" className="border px-2 py-1" required />
         <input name="slug" placeholder="slug" className="border px-2 py-1" required />
         <textarea name="description" placeholder="Descripción" className="border px-2 py-1" />
