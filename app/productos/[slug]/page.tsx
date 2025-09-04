@@ -1,59 +1,91 @@
-import { fetchProductBySlug } from '@/lib/products';
-import { headers } from 'next/headers';
+// app/productos/[slug]/page.tsx
+import Link from 'next/link'
+import { fetchProductBySlug, formatPrice, publicUrl } from '@/lib/products'
 
-function formatPrice(cents: number) {
-  return cents.toLocaleString('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0,
-  });
-}
+type Props = { params: { slug: string } }
 
-function getBaseUrl() {
-  const env = process.env.NEXT_PUBLIC_SITE_URL;
-  if (env) return env.replace(/\/$/, '');
-  const h = headers();
-  const host = h.get('host') || 'localhost:3000';
-  const proto = (h.get('x-forwarded-proto') || 'https');
-  return `${proto}://${host}`;
-}
-
-export default async function ProductDetail({ params }: { params: { slug: string } }) {
-  const product = await fetchProductBySlug(params.slug);
+export default async function ProductDetailPage({ params }: Props) {
+  const product = await fetchProductBySlug(params.slug)
   if (!product) {
-    return <main className="container mx-auto px-4 py-10"><h1>Producto no encontrado</h1></main>;
+    return (
+      <main className="container mx-auto px-4 py-12">
+        <p>Producto no encontrado.</p>
+        <Link href="/productos" className="underline">Volver</Link>
+      </main>
+    )
   }
-
-  const url = `${getBaseUrl()}/productos/${product.slug}`;
-  const shareText = encodeURIComponent(`${product.name} – ${formatPrice(product.price_cents)} en VibeTech`);
-  const shareUrl = encodeURIComponent(url);
 
   return (
     <main className="container mx-auto px-4 py-10">
-      <div className="grid gap-8 md:grid-cols-2">
-        <div>
-          {product.imageUrl ? (
-            <img src={product.imageUrl} alt={product.name} className="w-full rounded-lg object-cover" />
-          ) : (
-            <div className="aspect-[4/3] w-full bg-neutral-800 rounded" />
-          )}
+      <div className="grid gap-10 lg:grid-cols-2">
+        {/* Imagen principal */}
+        <div className="rounded-2xl overflow-hidden border border-white/10 bg-white/5">
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="w-full object-cover"
+            style={{ aspectRatio: '16/10' }}
+          />
         </div>
+
+        {/* Info */}
         <div>
-          <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
-          <p className="opacity-80 mb-4">{product.description}</p>
-          <div className="flex items-baseline gap-3 mb-6">
+          <h1 className="text-3xl font-extrabold">{product.name}</h1>
+          <p className="mt-2 opacity-80">{product.description}</p>
+
+          <div className="mt-4 flex items-baseline gap-3">
             <span className="text-2xl font-bold">{formatPrice(product.price_cents)}</span>
-            {!!product.old_price_cents && (
-              <span className="line-through opacity-60">{formatPrice(product.old_price_cents)}</span>
+            {product.old_price_cents && (
+              <span className="text-lg line-through opacity-60">
+                {formatPrice(product.old_price_cents)}
+              </span>
             )}
           </div>
-          <div className="flex gap-3">
-            <a href={`https://wa.me/?text=${shareText}%20${shareUrl}`} target="_blank">WhatsApp</a>
-            <a href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`} target="_blank">Facebook</a>
-            <a href={`https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`} target="_blank">X</a>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/productos" className="rounded-md border border-white/30 px-4 py-2 font-semibold hover:bg-white/10">
+              Volver
+            </Link>
+          </div>
+
+          {/* Botones sociales transparentes */}
+          <div className="mt-4 flex flex-wrap gap-3">
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(`${product.name} — ${formatPrice(product.price_cents)} · ${publicUrl(`/productos/${product.slug}`)}`)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="rounded-md border border-white/30 px-4 py-2 font-semibold hover:bg-white/10"
+            >
+              WhatsApp
+            </a>
+
+            <a
+              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(publicUrl(`/productos/${product.slug}`))}`}
+              target="_blank" rel="noopener noreferrer"
+              className="rounded-md border border-white/30 px-4 py-2 font-semibold hover:bg-white/10"
+            >
+              Facebook
+            </a>
+
+            <a
+              href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(publicUrl(`/productos/${product.slug}`))}&text=${encodeURIComponent(product.name)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="rounded-md border border-white/30 px-4 py-2 font-semibold hover:bg-white/10"
+            >
+              X
+            </a>
+
+            <button
+              onClick={async () => {
+                await navigator.clipboard.writeText(publicUrl(`/productos/${product.slug}`))
+                alert('Link copiado')
+              }}
+              className="rounded-md border border-white/30 px-4 py-2 font-semibold hover:bg-white/10"
+            >
+              Copiar link
+            </button>
           </div>
         </div>
       </div>
     </main>
-  );
+  )
 }
