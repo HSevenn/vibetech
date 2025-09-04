@@ -1,45 +1,50 @@
-
-import site from '@/data/site.json';
-
-import HeroSlider from '@/components/HeroSlider';
-
+// app/page.tsx
 import Link from 'next/link';
-import { fetchLatestProducts, publicUrl } from '@/lib/products';
+import { fetchLatestProducts } from '@/lib/products';
 
-export default async function Home(){
-  const latest = await fetchLatestProducts(6);
+function formatPrice(cents: number) {
+  return cents.toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+  });
+}
+
+export default async function HomePage() {
+  const products = await fetchLatestProducts(6);
+
   return (
-    <div className="grid gap-10 lg:grid-cols-2">
-      <section>
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight">
-          {site.brandName} — <span className="text-neutral-400">{site.tagline}</span>
-        </h1>
-        <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground">
-          Catálogo minimalista y enfocado a conversión. Productos seleccionados, asistencia directa por WhatsApp y novedades constantes.
-        </p>
-        <div className="mt-6 flex gap-3">
-          <Link href="/productos" className="btn btn-primary">Ver productos</Link>
-          <Link href="/contacto" className="btn btn-outline">Contacto</Link>
-        </div>
-      </section>
-      <section>
-        <HeroSlider />
-      </section>
-      <section className="lg:col-span-2">
-        <h2 className="mb-4 text-xl font-semibold">Productos</h2>
-        <div className="grid-products">
-          {latest.map((p: any) => {
-            const cover = Array.isArray(p.images) && p.images[0] ? publicUrl(p.images[0]) : '';
-            return (
-              <Link key={p.id} href={`/productos/${p.slug}`} className="rounded-xl border p-4 block hover:bg-neutral-900/40">
-                {cover && <img src={cover} alt={p.name} className="aspect-[4/3] w-full object-cover rounded-md mb-3" />}
-                <h3 className="font-semibold">{p.name}</h3>
-                <p className="text-sm opacity-80 line-clamp-2">{p.description}</p>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-    </div>
+    <main className="container mx-auto px-4 py-10">
+      <h1 className="text-3xl font-bold mb-6">VibeTech — Demo</h1>
+
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {products.map(p => (
+          <Link href={`/productos/${p.slug}`} key={p.id} className="rounded-xl border p-4 block hover:shadow">
+            {p.imageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={p.imageUrl}
+                alt={p.name}
+                className="aspect-[4/3] w-full object-cover rounded-md mb-3"
+                loading="lazy"
+              />
+            )}
+            <h3 className="font-semibold">{p.name}</h3>
+            <p className="text-sm opacity-80 line-clamp-2">{p.description}</p>
+
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-lg font-bold">
+                {formatPrice(p.price_cents)}
+              </span>
+              {!!p.old_price_cents && (
+                <span className="text-sm line-through opacity-60">
+                  {formatPrice(p.old_price_cents)}
+                </span>
+              )}
+            </div>
+          </Link>
+        ))}
+      </div>
+    </main>
   );
 }
