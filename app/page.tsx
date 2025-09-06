@@ -20,6 +20,7 @@ export default async function Home() {
   const latest = await fetchLatestProducts(6);
   // productos destacados para el slider (por si lo usas luego)
   const featured = await fetchFeaturedProducts(5);
+  void featured; // evita warning por variable no usada si no la renderizas aún
 
   return (
     <div className="grid gap-10 lg:grid-cols-2">
@@ -78,23 +79,26 @@ export default async function Home() {
 
                 {/* 💰 Precio + (opcional) tachado + badge de descuento */}
                 <div className="mt-2 flex items-center gap-2">
-                  {/* Precio actual, un poco más grande */}
-                  <span className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
+                  {/* Precio actual (más marcado) */}
+                  <span className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">
                     {formatCOP(p.price_cents)}
                   </span>
 
-                  {/* Precio anterior más pequeño y tachado */}
+                  {/* Precio anterior más pequeño y discreto */}
                   {p.old_price_cents && (
-                    <span className="text-sm line-through opacity-60">
+                    <span className="text-xs line-through text-neutral-500 dark:text-neutral-400">
                       {formatCOP(p.old_price_cents)}
                     </span>
                   )}
 
-                  {/* Badge sobrio si hay descuento */}
+                  {/* Badge de descuento con alto contraste */}
                   {discount !== null && discount > 0 && (
                     <span
-                      className="ml-1 text-xs font-semibold px-2 py-0.5 rounded
-                                 bg-green-900/30 text-green-400"
+                      className="
+                        ml-1 text-[12px] font-bold px-2 py-0.5 rounded-md
+                        bg-emerald-500 text-white shadow-sm
+                        dark:bg-emerald-400 dark:text-neutral-900
+                      "
                     >
                       {discount}% OFF
                     </span>
