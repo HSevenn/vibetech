@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         ? [{ url: product.imageUrl, width: 800, height: 600, alt: product.name }]
         : [],
       locale: 'es_CO',
-      type: 'product',
+      type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
