@@ -14,10 +14,8 @@ function formatCOP(cents: number) {
 
 type Props = { params: { slug: string } };
 
-// evita cachés problemáticos en Vercel/ISR cuando agregas productos
 export const dynamic = 'force-dynamic';
 
-// Metadatos Open Graph/Twitter para la vista previa en WhatsApp/Facebook/X
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const product = await fetchProductBySlug(params.slug);
@@ -81,7 +79,7 @@ export default async function ProductPage({ params }: Props) {
     (shortDesc ? `Descripción: ${shortDesc}\n` : '') +
     `Precio: ${formatCOP(product.price_cents)}\n¿Está disponible?\n${url}`;
 
-  // calcular descuento si hay precio anterior
+  // calcular descuento
   const discount =
     product.old_price_cents && product.old_price_cents > product.price_cents
       ? Math.max(0, Math.round(100 - (product.price_cents / product.old_price_cents) * 100))
@@ -110,18 +108,25 @@ export default async function ProductPage({ params }: Props) {
             {product.description}
           </p>
 
-          {/* 💰 Precios + badge */}
           <div className="mb-6 flex items-center gap-3">
-            <span className="text-2xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-100">
+            {/* Precio actual */}
+            <span className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
               {formatCOP(product.price_cents)}
             </span>
+
+            {/* Precio anterior */}
             {product.old_price_cents && (
-              <span className="text-sm md:text-base line-through opacity-60">
+              <span className="text-sm line-through opacity-60">
                 {formatCOP(product.old_price_cents)}
               </span>
             )}
+
+            {/* Badge de descuento con mismo estilo que en cards */}
             {discount !== null && discount > 0 && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-green-900/30 text-green-400">
+              <span
+                className="ml-1 text-xs font-semibold px-2 py-0.5 rounded
+                           bg-green-900/30 text-green-500"
+              >
                 {discount}% OFF
               </span>
             )}
