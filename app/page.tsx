@@ -6,6 +6,15 @@ import { fetchLatestProducts, fetchFeaturedProducts, publicUrl } from '@/lib/pro
 
 export const dynamic = 'force-dynamic';
 
+// Formateador de precios en COP
+function formatCOP(cents: number) {
+  return cents.toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+  });
+}
+
 export default async function Home() {
   // productos recientes (grid)
   const latest = await fetchLatestProducts(6);
@@ -30,7 +39,7 @@ export default async function Home() {
 
       {/* Slider derecho (destacados) */}
       <section>
-        <HeroSlider/> 
+        <HeroSlider/>
       </section>
 
       {/* Grid de últimos productos */}
@@ -59,6 +68,18 @@ export default async function Home() {
                 )}
                 <h3 className="font-semibold">{p.name}</h3>
                 <p className="text-sm opacity-80 line-clamp-2">{p.description}</p>
+
+                {/* 💰 Precio + (opcional) tachado si hay oferta */}
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="text-sm font-bold">
+                    {formatCOP(p.price_cents)}
+                  </span>
+                  {p.old_price_cents && (
+                    <span className="text-xs line-through opacity-60">
+                      {formatCOP(p.old_price_cents)}
+                    </span>
+                  )}
+                </div>
               </Link>
             );
           })}
