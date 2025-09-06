@@ -11,7 +11,19 @@ export const metadata: Metadata = {
   openGraph: { siteName: 'VibeTech', locale: 'es_CO', type: 'website' },
   twitter: { card: 'summary_large_image' }
 };
-
+export const metadata = {
+  icons: {
+    icon: [
+      { url: '/vibetech_icon.ico?v=2' }, // ico clásico
+      { url: '/vibetech_icon_16.png?v=2', sizes: '16x16', type: 'image/png' },
+      { url: '/vibetech_icon_32.png?v=2', sizes: '32x32', type: 'image/png' },
+      { url: '/vibetech_icon_48.png?v=2', sizes: '48x48', type: 'image/png' },
+      { url: '/vibetech_icon_192.png?v=2', sizes: '192x192', type: 'image/png' },
+      { url: '/vibetech_icon_512.png?v=2', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/vibetech_icon_180.png?v=2' }],
+  },
+};
 export default function RootLayout({ children }: { children: React.ReactNode }){
   return (
     <html lang="es">
