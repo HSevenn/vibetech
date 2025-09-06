@@ -1,4 +1,4 @@
-
+// app/page.tsx
 import site from '@/data/site.json';
 
 import HeroSlider from '@/components/HeroSlider';
@@ -6,10 +6,14 @@ import HeroSlider from '@/components/HeroSlider';
 import Link from 'next/link';
 import { fetchLatestProducts, publicUrl } from '@/lib/products';
 
-export default async function Home(){
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
   const latest = await fetchLatestProducts(6);
+
   return (
     <div className="grid gap-10 lg:grid-cols-2">
+      {/* Hero izquierdo (nombre + slogan + CTA) */}
       <section>
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight">
           {site.brandName} — <span className="text-neutral-400">{site.tagline}</span>
@@ -22,17 +26,33 @@ export default async function Home(){
           <Link href="/contacto" className="btn btn-outline">Contacto</Link>
         </div>
       </section>
+
+      {/* Slider derecho (destacados) */}
       <section>
         <HeroSlider />
       </section>
+
+      {/* Grid de últimos productos */}
       <section className="lg:col-span-2">
         <h2 className="mb-4 text-xl font-semibold">Productos</h2>
         <div className="grid-products">
           {latest.map((p: any) => {
-            const cover = Array.isArray(p.images) && p.images[0] ? publicUrl(p.images[0]) : '';
+            const cover =
+              Array.isArray(p.images) && p.images[0] ? publicUrl(p.images[0]) : '';
             return (
-              <Link key={p.id} href={`/productos/${p.slug}`} className="rounded-xl border p-4 block hover:bg-neutral-900/40">
-                {cover && <img src={cover} alt={p.name} className="aspect-[4/3] w-full object-cover rounded-md mb-3" />}
+              <Link
+                key={p.id}
+                href={`/productos/${p.slug}`}
+                className="rounded-xl border p-4 block hover:bg-neutral-900/40"
+              >
+                {cover && (
+                  <img
+                    src={cover}
+                    alt={p.name}
+                    className="aspect-[4/3] w-full object-cover rounded-md mb-3"
+                    loading="lazy"
+                  />
+                )}
                 <h3 className="font-semibold">{p.name}</h3>
                 <p className="text-sm opacity-80 line-clamp-2">{p.description}</p>
               </Link>
