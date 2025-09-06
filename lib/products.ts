@@ -103,3 +103,23 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
   if (error || !data) return null;
   return mapRow(data);
 }
+
+// ... aquí está el type Product y otras funciones previas ...
+
+// Al final del archivo agrega esto 👇
+export async function fetchProductBySlug(slug: string): Promise<Product | null> {
+  const { data, error } = await supabase
+    .from("products")
+    .select(
+      "id, slug, name, description, price_cents, old_price_cents, stock, images, tags, is_active, created_at"
+    )
+    .eq("slug", slug)
+    .eq("is_active", true) // asegura que solo salgan productos activos
+    .maybeSingle();        // devuelve null si no encuentra nada
+
+  if (error) {
+    console.error("❌ Error en fetchProductBySlug:", error.message);
+    return null;
+  }
+
+  return data as Product | null;
