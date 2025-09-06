@@ -1,5 +1,4 @@
 
-Título
 // lib/products.ts
 
 import { supabase } from './supabase';
