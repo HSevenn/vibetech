@@ -1,13 +1,9 @@
 // app/productos/[slug]/page.tsx
 import Link from 'next/link';
 import { fetchProductBySlug } from '@/lib/products';
-import {
-  FaWhatsapp,
-  FaFacebook,
-  FaTwitter,
-  FaInstagram,
-  FaLink,
-} from 'react-icons/fa';
+import SocialButtons from '@/components/SocialButtons';
+
+export const dynamic = 'force-dynamic';
 
 function formatCOP(cents: number) {
   return cents.toLocaleString('es-CO', {
@@ -31,15 +27,10 @@ export default async function ProductPage({ params }: { params: { slug: string }
     );
   }
 
-  const url = `https://vibetechvibe.com/productos/${product.slug}`;
-  const shortDesc =
-    (product.description || '').trim().slice(0, 140) +
-    ((product.description || '').length > 140 ? '…' : '');
-
-  const waMessage = `Hola, quiero comprar el producto "${product.name}".
-${shortDesc ? `Descripción: ${shortDesc}\n` : ''}Precio: ${formatCOP(product.price_cents)}
-¿Está disponible?
-${url}`;
+  // URL absoluta del producto para compartir
+  const base =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || 'https://vibetechvibe.com';
+  const url = `${base}/productos/${product.slug}`;
 
   return (
     <main className="container mx-auto px-4 py-10">
@@ -60,7 +51,11 @@ ${url}`;
         {/* Info */}
         <div>
           <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
-          <p className="mb-4 text-neutral-600 dark:text-neutral-300">{product.description}</p>
+          {product.description && (
+            <p className="mb-4 text-neutral-600 dark:text-neutral-300">
+              {product.description}
+            </p>
+          )}
 
           <div className="mb-6 flex items-baseline gap-3">
             <span className="text-2xl font-bold">{formatCOP(product.price_cents)}</span>
@@ -71,70 +66,21 @@ ${url}`;
             )}
           </div>
 
-          {/* Botón principal */}
-          <div className="flex gap-3 mb-6">
-            <a
-              href={`https://wa.me/573014564861?text=${encodeURIComponent(waMessage)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-primary"
-            >
-              Comprar por WhatsApp
-            </a>
+          {/* Acciones */}
+          <div className="flex items-center gap-3 mb-4">
             <Link href="/productos" className="btn btn-outline">
               Volver
             </Link>
           </div>
 
-          {/* Botones de compartir */}
-          <div className="mt-4 flex flex-wrap gap-2">
-            <a
-              href={`https://wa.me/?text=${encodeURIComponent(
-                `Mira este producto: ${product.name} — ${url}`
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 rounded-lg border border-green-500 text-green-500 hover:bg-green-500/10 flex items-center gap-2"
-            >
-              <FaWhatsapp /> WhatsApp
-            </a>
-
-            <a
-              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 rounded-lg border border-blue-500 text-blue-500 hover:bg-blue-500/10 flex items-center gap-2"
-            >
-              <FaFacebook /> Facebook
-            </a>
-
-            <a
-              href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
-                url
-              )}&text=${encodeURIComponent(product.name)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 rounded-lg border border-sky-400 text-sky-400 hover:bg-sky-400/10 flex items-center gap-2"
-            >
-              <FaTwitter /> X
-            </a>
-
-            <a
-              href="https://www.instagram.com/vibetechcol"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 rounded-lg border border-pink-500 text-pink-500 hover:bg-pink-500/10 flex items-center gap-2"
-            >
-              <FaInstagram /> Instagram
-            </a>
-
-            <button
-              onClick={() => navigator.clipboard.writeText(url)}
-              className="px-4 py-2 rounded-lg border border-gray-400 text-gray-400 hover:bg-gray-400/10 flex items-center gap-2"
-            >
-              <FaLink /> Copiar link
-            </button>
-          </div>
+          {/* Botones transparentes con iconos (compartir + comprar por WA) */}
+          <SocialButtons
+            productName={product.name}
+            productUrl={url}
+            whatsappPhone="3014564861"
+            instagramUrl="https://www.instagram.com/vibetechcol"
+            className="mt-2"
+          />
         </div>
       </div>
     </main>
