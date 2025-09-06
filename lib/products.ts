@@ -74,3 +74,5 @@ export async function fetchFeaturedProducts(limit = 6): Promise<Product[]> {
 
   return (data ?? []) as Product[];
 }
+// Alias para mantener compatibilidad con páginas que esperan fetchProducts
+export { fetchLatestProducts as fetchProducts };
