@@ -1,15 +1,16 @@
 // app/page.tsx
 import site from '@/data/site.json';
-
 import HeroSlider from '@/components/HeroSlider';
-
 import Link from 'next/link';
-import { fetchLatestProducts, publicUrl } from '@/lib/products';
+import { fetchLatestProducts, fetchFeaturedProducts, publicUrl } from '@/lib/products';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 export default async function Home() {
+  // productos recientes (grid)
   const latest = await fetchLatestProducts(6);
+  // productos destacados para el slider
+  const featured = await fetchFeaturedProducts(5);
 
   return (
     <div className="grid gap-10 lg:grid-cols-2">
@@ -29,7 +30,7 @@ export default async function Home() {
 
       {/* Slider derecho (destacados) */}
       <section>
-        <HeroSlider />
+        <HeroSlider items={featured} />
       </section>
 
       {/* Grid de últimos productos */}
@@ -37,8 +38,11 @@ export default async function Home() {
         <h2 className="mb-4 text-xl font-semibold">Productos</h2>
         <div className="grid-products">
           {latest.map((p: any) => {
+            // si tu fetchLatestProducts ya devuelve imageUrl, úsalo; si no, seguimos calculándola
             const cover =
-              Array.isArray(p.images) && p.images[0] ? publicUrl(p.images[0]) : '';
+              (p.imageUrl as string | null) ??
+              (Array.isArray(p.images) && p.images[0] ? publicUrl(p.images[0]) : '');
+
             return (
               <Link
                 key={p.id}
