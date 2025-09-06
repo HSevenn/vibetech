@@ -30,7 +30,7 @@ export default async function Home() {
 
       {/* Slider derecho (destacados) */}
       <section>
-        <HeroSlider items={featured} />
+        <HeroSlider/> 
       </section>
 
       {/* Grid de últimos productos */}
