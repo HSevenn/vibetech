@@ -38,7 +38,7 @@ export default function HeroSlider() {
               p.imageUrl ??
               (Array.isArray(p.images) && p.images[0] ? publicUrl(p.images[0]) : null),
           }))
-          .filter((p: Item) => !!p.imageUrl) // solo con imagen
+          .filter((p: Item) => !!p.imageUrl)
           .map((p: any) => ({
             slug: p.slug,
             name: p.name,
@@ -71,7 +71,6 @@ export default function HeroSlider() {
   const next = () => setI((v) => (v + 1) % (items.length || 1));
   const current = items[i];
 
-  // Esqueleto si aún no hay elementos
   if (!current) {
     return (
       <div className="relative w-full overflow-hidden rounded-2xl border bg-neutral-50 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
@@ -79,6 +78,12 @@ export default function HeroSlider() {
       </div>
     );
   }
+
+  // % descuento si aplica
+  const discount =
+    current.old_price_cents && current.old_price_cents > current.price_cents
+      ? Math.max(0, Math.round(100 - (current.price_cents / current.old_price_cents) * 100))
+      : null;
 
   return (
     <div className="relative w-full overflow-hidden rounded-2xl border bg-neutral-50 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
@@ -90,19 +95,23 @@ export default function HeroSlider() {
           loading="eager"
         />
 
-        {/* Controles opcionales */}
-        {false && (
-          <div className="absolute bottom-6 left-6 flex items-center gap-3">
-            <button onClick={prev} className="btn btn-outline">
-              ←
-            </button>
-            <button onClick={next} className="btn btn-outline">
-              →
-            </button>
-          </div>
-        )}
+        {/* Controles minimalistas */}
+        <button
+          onClick={prev}
+          aria-label="Anterior"
+          className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full backdrop-blur bg-white/50 dark:bg-neutral-900/40 border border-white/60 dark:border-neutral-800 px-2.5 py-2 shadow-sm hover:bg-white/70 dark:hover:bg-neutral-900/60 transition"
+        >
+          ←
+        </button>
+        <button
+          onClick={next}
+          aria-label="Siguiente"
+          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full backdrop-blur bg-white/50 dark:bg-neutral-900/40 border border-white/60 dark:border-neutral-800 px-2.5 py-2 shadow-sm hover:bg-white/70 dark:hover:bg-neutral-900/60 transition"
+        >
+          →
+        </button>
 
-        {/* Overlay inferior con gradiente: nombre + precio + botón */}
+        {/* Overlay inferior con gradiente: nombre + precios + badge + CTA */}
         <div
           className="
             absolute inset-x-0 bottom-0
@@ -116,15 +125,26 @@ export default function HeroSlider() {
             <h3 className="truncate text-base sm:text-lg font-semibold drop-shadow-md">
               {current.name}
             </h3>
-            <div className="mt-0.5 flex items-baseline gap-2">
-              <span className="text-sm sm:text-base font-bold drop-shadow">
+
+            <div className="mt-0.5 flex items-center gap-2">
+              {/* Precio actual más grande */}
+              <span className="text-lg sm:text-xl font-bold drop-shadow">
                 {formatCOP(current.price_cents)}
               </span>
+
+              {/* Precio anterior pequeño y tachado */}
               {current.old_price_cents ? (
                 <span className="text-xs sm:text-sm line-through opacity-80">
                   {formatCOP(current.old_price_cents)}
                 </span>
               ) : null}
+
+              {/* Badge de descuento (mismo look que en cards) */}
+              {discount !== null && discount > 0 && (
+                <span className="ml-1 text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded bg-green-900/30 text-green-400">
+                  {discount}% OFF
+                </span>
+              )}
             </div>
           </div>
 
