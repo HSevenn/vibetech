@@ -74,5 +74,38 @@ export async function fetchFeaturedProducts(limit = 6): Promise<Product[]> {
 
   return (data ?? []) as Product[];
 }
-// Alias para mantener compatibilidad con páginas que esperan fetchProducts
-export { fetchLatestProducts as fetchProducts };
+// Devuelve la lista de productos con ordenamiento
+export async function fetchProductsByOrder(
+  order: 'newest' | 'price_asc' | 'price_desc' = 'newest'
+): Promise<Product[]> {
+  let query = supabase
+    .from('products')
+    .select('id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at')
+    .eq('is_active', true);
+
+  if (order === 'price_asc') {
+    query = query.order('price_cents', { ascending: true, nullsFirst: false });
+  } else if (order === 'price_desc') {
+    query = query.order('price_cents', { ascending: false, nullsFirst: false });
+  } else {
+    // newest
+    query = query.order('created_at', { ascending: false });
+  }
+
+  const { data, error } = await query.limit(60);
+  if (error) {
+    console.error('fetchProductsByOrder error:', error.message);
+    return [];
+  }
+  return (data ?? []) as Product[];
+}
+
+// Wrapper compatible con page.tsx
+export async function fetchProducts(params?: {
+  order?: 'newest' | 'price_asc' | 'price_desc';
+}) {
+  return fetchProductsByOrder(params?.order);
+}
+
+
+
