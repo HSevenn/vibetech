@@ -81,6 +81,12 @@ export default async function ProductPage({ params }: Props) {
     (shortDesc ? `Descripción: ${shortDesc}\n` : '') +
     `Precio: ${formatCOP(product.price_cents)}\n¿Está disponible?\n${url}`;
 
+  // calcular descuento si hay precio anterior
+  const discount =
+    product.old_price_cents && product.old_price_cents > product.price_cents
+      ? Math.max(0, Math.round(100 - (product.price_cents / product.old_price_cents) * 100))
+      : null;
+
   return (
     <main className="container mx-auto px-4 py-10">
       <div className="grid gap-8 lg:grid-cols-2">
@@ -104,11 +110,19 @@ export default async function ProductPage({ params }: Props) {
             {product.description}
           </p>
 
-          <div className="mb-6 flex items-baseline gap-3">
-            <span className="text-2xl font-bold">{formatCOP(product.price_cents)}</span>
+          {/* 💰 Precios + badge */}
+          <div className="mb-6 flex items-center gap-3">
+            <span className="text-2xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-100">
+              {formatCOP(product.price_cents)}
+            </span>
             {product.old_price_cents && (
-              <span className="text-lg line-through opacity-60">
+              <span className="text-sm md:text-base line-through opacity-60">
                 {formatCOP(product.old_price_cents)}
+              </span>
+            )}
+            {discount !== null && discount > 0 && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-green-900/30 text-green-400">
+                {discount}% OFF
               </span>
             )}
           </div>
