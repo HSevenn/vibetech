@@ -3,7 +3,23 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { fetchFeaturedProducts, publicUrl } from '@/lib/products';
 
-type Item = { slug: string; name: string; imageUrl?: string | null; images?: string[] | null };
+type Item = {
+  slug: string;
+  name: string;
+  imageUrl?: string | null;
+  images?: string[] | null;
+  price_cents: number;
+  old_price_cents?: number | null;
+};
+
+// Formateador COP
+function formatCOP(cents: number) {
+  return cents.toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+  });
+}
 
 export default function HeroSlider() {
   const [items, setItems] = useState<Item[]>([]);
@@ -15,36 +31,44 @@ export default function HeroSlider() {
     (async () => {
       try {
         const list = await fetchFeaturedProducts(6);
-        // si por alguna razón imageUrl no viene, construimos desde images[0]
-        const normalized = (list ?? [])
-          .map(p => ({
+        const normalized: Item[] = (list ?? [])
+          .map((p: any) => ({
             ...p,
-            imageUrl: p.imageUrl ?? (Array.isArray(p.images) && p.images[0] ? publicUrl(p.images[0]) : null),
+            imageUrl:
+              p.imageUrl ??
+              (Array.isArray(p.images) && p.images[0] ? publicUrl(p.images[0]) : null),
           }))
-          .filter(p => !!p.imageUrl) // solo con imagen
-          .map(p => ({ slug: p.slug, name: p.name, imageUrl: p.imageUrl }));
+          .filter((p: Item) => !!p.imageUrl) // solo con imagen
+          .map((p: any) => ({
+            slug: p.slug,
+            name: p.name,
+            imageUrl: p.imageUrl,
+            price_cents: p.price_cents,
+            old_price_cents: p.old_price_cents ?? null,
+          }));
 
-        if (mounted) {
-          setItems(normalized);
-          console.log('[HeroSlider] destacados:', normalized.length);
-        }
+        if (mounted) setItems(normalized);
       } catch (e) {
         console.error('[HeroSlider] error:', e);
         if (mounted) setItems([]);
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
     if (!items.length) return;
-    timer.current && clearInterval(timer.current);
-    timer.current = setInterval(() => setI(v => (v + 1) % items.length), 4500);
-    return () => { if (timer.current) clearInterval(timer.current); };
+    if (timer.current) clearInterval(timer.current);
+    timer.current = setInterval(() => setI((v) => (v + 1) % items.length), 4500);
+    return () => {
+      if (timer.current) clearInterval(timer.current);
+    };
   }, [items.length]);
 
-  const prev = () => setI(v => (v - 1 + (items.length || 1)) % (items.length || 1));
-  const next = () => setI(v => (v + 1) % (items.length || 1));
+  const prev = () => setI((v) => (v - 1 + (items.length || 1)) % (items.length || 1));
+  const next = () => setI((v) => (v + 1) % (items.length || 1));
   const current = items[i];
 
   // Esqueleto si aún no hay elementos
@@ -66,16 +90,55 @@ export default function HeroSlider() {
           loading="eager"
         />
 
-        {/* Botones internos ocultos, los dejamos por si luego quieres activarlos */}
+        {/* Controles opcionales */}
         {false && (
           <div className="absolute bottom-6 left-6 flex items-center gap-3">
-            <button onClick={prev} className="btn btn-outline">←</button>
-            <button onClick={next} className="btn btn-outline">→</button>
+            <button onClick={prev} className="btn btn-outline">
+              ←
+            </button>
+            <button onClick={next} className="btn btn-outline">
+              →
+            </button>
           </div>
         )}
 
-        <div className="absolute bottom-6 right-6 flex items-center gap-3">
-          <Link href={`/productos/${current.slug}`} className="btn btn-primary">Ver producto</Link>
+        {/* Overlay inferior con gradiente: nombre + precio + botón */}
+        <div
+          className="
+            absolute inset-x-0 bottom-0
+            bg-gradient-to-t from-black/70 via-black/30 to-transparent
+            px-4 sm:px-5 py-3 sm:py-4
+            text-white
+            flex items-end justify-between gap-3
+          "
+        >
+          <div className="min-w-0">
+            <h3 className="truncate text-base sm:text-lg font-semibold drop-shadow-md">
+              {current.name}
+            </h3>
+            <div className="mt-0.5 flex items-baseline gap-2">
+              <span className="text-sm sm:text-base font-bold drop-shadow">
+                {formatCOP(current.price_cents)}
+              </span>
+              {current.old_price_cents ? (
+                <span className="text-xs sm:text-sm line-through opacity-80">
+                  {formatCOP(current.old_price_cents)}
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          <Link
+            href={`/productos/${current.slug}`}
+            className="
+              btn btn-outline
+              bg-white/90 text-neutral-900 hover:bg-white
+              dark:bg-neutral-900/80 dark:text-neutral-100 dark:hover:bg-neutral-900
+              whitespace-nowrap
+            "
+          >
+            Ver producto
+          </Link>
         </div>
       </div>
     </div>
