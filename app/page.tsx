@@ -18,7 +18,7 @@ function formatCOP(cents: number) {
 export default async function Home() {
   // productos recientes (grid)
   const latest = await fetchLatestProducts(6);
-  // productos destacados para el slider
+  // productos destacados para el slider (por si lo usas luego)
   const featured = await fetchFeaturedProducts(5);
 
   return (
@@ -39,7 +39,7 @@ export default async function Home() {
 
       {/* Slider derecho (destacados) */}
       <section>
-        <HeroSlider/>
+        <HeroSlider />
       </section>
 
       {/* Grid de últimos productos */}
@@ -47,10 +47,16 @@ export default async function Home() {
         <h2 className="mb-4 text-xl font-semibold">Productos</h2>
         <div className="grid-products">
           {latest.map((p: any) => {
-            // si tu fetchLatestProducts ya devuelve imageUrl, úsalo; si no, seguimos calculándola
+            // Usa imageUrl si viene; si no, construye desde el primer path del bucket
             const cover =
               (p.imageUrl as string | null) ??
               (Array.isArray(p.images) && p.images[0] ? publicUrl(p.images[0]) : '');
+
+            // Calcula % de descuento si hay precio anterior válido
+            const discount =
+              p.old_price_cents && p.old_price_cents > p.price_cents
+                ? Math.max(0, Math.round(100 - (p.price_cents / p.old_price_cents) * 100))
+                : null;
 
             return (
               <Link
@@ -66,17 +72,31 @@ export default async function Home() {
                     loading="lazy"
                   />
                 )}
+
                 <h3 className="font-semibold">{p.name}</h3>
                 <p className="text-sm opacity-80 line-clamp-2">{p.description}</p>
 
-                {/* 💰 Precio + (opcional) tachado si hay oferta */}
-                <div className="mt-2 flex items-baseline gap-2">
-                  <span className="text-sm font-bold">
+                {/* 💰 Precio + (opcional) tachado + badge de descuento */}
+                <div className="mt-2 flex items-center gap-2">
+                  {/* Precio actual, un poco más grande */}
+                  <span className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
                     {formatCOP(p.price_cents)}
                   </span>
+
+                  {/* Precio anterior más pequeño y tachado */}
                   {p.old_price_cents && (
-                    <span className="text-xs line-through opacity-60">
+                    <span className="text-sm line-through opacity-60">
                       {formatCOP(p.old_price_cents)}
+                    </span>
+                  )}
+
+                  {/* Badge sobrio si hay descuento */}
+                  {discount !== null && discount > 0 && (
+                    <span
+                      className="ml-1 text-xs font-semibold px-2 py-0.5 rounded
+                                 bg-green-900/30 text-green-400"
+                    >
+                      {discount}% OFF
                     </span>
                   )}
                 </div>
