@@ -3,20 +3,22 @@ import type { Metadata } from 'next';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
+const BASE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://www.vibetechvibe.com'; // 👈 usa la env correcta
+
 export const metadata: Metadata = {
   title: 'VibeTech — Tecnología que vibra contigo',
   description: 'Catálogo minimalista con enfoque a conversión.',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(BASE_URL),
   manifest: '/manifest.json',
 
-  // Open Graph (fallback global)
   openGraph: {
     siteName: 'VibeTech',
     locale: 'es_CO',
     type: 'website',
     images: [
       {
-        url: '/og-default.jpg',  // servido desde /public
+        url: 'https://www.vibetechvibe.com/og-default.jpg', // 👈 absoluta
         width: 1200,
         height: 630,
         alt: 'VibeTech — Tecnología que vibra contigo',
@@ -24,13 +26,11 @@ export const metadata: Metadata = {
     ],
   },
 
-  // Twitter Card (usa la misma imagen)
   twitter: {
     card: 'summary_large_image',
-    images: ['/og-default.jpg'],
+    images: ['https://www.vibetechvibe.com/og-default.jpg'], // 👈 absoluta
   },
 
-  // Favicons
   icons: {
     icon: [
       { url: '/vibetech_icon.ico?v=2' },
