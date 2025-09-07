@@ -12,11 +12,16 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   manifest: '/manifest.json',
 
+  // Canonical de la HOME (las demás páginas lo ponen en su generateMetadata)
+  alternates: {
+    canonical: 'https://www.vibetechvibe.com/',
+  },
+
   openGraph: {
     siteName: 'VibeTech',
     locale: 'es_CO',
     type: 'website',
-    url: 'https://www.vibetechvibe.com/', // 👈 añadido og:url
+    url: 'https://www.vibetechvibe.com/', // og:url explícito (HOME)
     images: [
       {
         url: 'https://www.vibetechvibe.com/og-default.jpg',
@@ -44,10 +49,8 @@ export const metadata: Metadata = {
     apple: [{ url: '/vibetech_icon_180.png?v=2' }],
   },
 
-  // Opcional: solo si en el futuro usas una app de Facebook
-  // other: {
-  //   'fb:app_id': 'TU_APP_ID',
-  // },
+  // (Opcional) Si creas una app en Facebook:
+  // other: { 'fb:app_id': 'TU_APP_ID' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
