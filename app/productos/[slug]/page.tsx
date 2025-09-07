@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { fetchProductBySlug } from '@/lib/products';
 import ShareButtons from '@/components/ShareButtons';
+import ProductImage from '@/components/ProductImage'; // 👈 nuevo import
 
 const BASE = 'https://www.vibetechvibe.com';
 
@@ -41,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description: 'Este producto no existe en VibeTech.',
         alternates: { canonical: notFoundUrl },
         openGraph: {
-          type: 'website', // ✅ corregido
+          type: 'website',
           url: notFoundUrl,
           siteName: 'VibeTech',
           title: 'Producto no encontrado',
@@ -62,15 +63,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const canonical = `${BASE}/productos/${product.slug}`;
     const title = product.name;
     const desc = (product.description?.trim() || 'Descubre este producto en VibeTech.').slice(0, 180);
-    const img = toAbsolute(product.imageUrl); // ✅ absoluta + fallback
+    const img = toAbsolute(product.imageUrl); // absoluta + fallback
 
     return {
       title,
       description: desc,
-      alternates: { canonical }, // ✅ canonical por producto
+      alternates: { canonical }, // canonical por producto
       openGraph: {
-        type: 'website', // ✅ corregido
-        url: canonical,  // ✅ og:url explícito
+        type: 'website',          // (corregido)
+        url: canonical,           // og:url explícito
         siteName: 'VibeTech',
         title,
         description: desc,
@@ -83,12 +84,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description: desc,
         images: [img],
       },
-
-      // (Opcional) etiquetado adicional de producto:
-      // other: {
-      //   'product:price:amount': String(product.price_cents),
-      //   'product:price:currency': 'COP',
-      // },
     };
   } catch {
     return {
@@ -135,13 +130,9 @@ export default async function ProductPage({ params }: Props) {
         {/* Imagen */}
         <div>
           {product.imageUrl ? (
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              className="w-full rounded-lg border object-cover"
-            />
+            <ProductImage src={product.imageUrl} alt={product.name} />
           ) : (
-            <div className="w-full h-64 bg-neutral-200 dark:bg-neutral-800 rounded-lg" />
+            <div className="w-full aspect-square bg-neutral-200 dark:bg-neutral-800 rounded-lg" />
           )}
         </div>
 
@@ -165,7 +156,7 @@ export default async function ProductPage({ params }: Props) {
               </span>
             )}
 
-            {/* Badge de descuento con mismo estilo que en cards */}
+            {/* Badge de descuento */}
             {discount !== null && discount > 0 && (
               <span
                 className="ml-1 text-xs font-semibold px-2 py-0.5 rounded
