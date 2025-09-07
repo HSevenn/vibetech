@@ -10,41 +10,43 @@ import {
 } from 'react-icons/fa';
 
 type Props = {
-  url: string;          // URL canónica del producto (ej: https://www.vibetechvibe.com/productos/slug)
+  url: string;          // URL canónica del producto (ej: https://vibetechvibe.com/productos/slug)
   productName: string;  // Nombre del producto
   waMessage: string;    // Mensaje para el botón "Comprar por WhatsApp"
 };
 
 export default function ShareButtons({ url, productName, waMessage }: Props) {
-  // ✅ Asegura URL limpia (sin ?query ni #hash)
-  const cleanUrl = (() => {
-    try {
-      const u = new URL(url);
-      u.search = '';
-      u.hash = '';
-      return u.toString();
-    } catch {
-      // por si llega relativa o malformada
-      return url.split('?')[0].split('#')[0];
-    }
-  })();
+  // 👇 siempre mantenemos la URL limpia
+  const cleanUrl = url;
 
-  // CTA compra directa
-  const waBuyHref = `https://wa.me/573014564861?text=${encodeURIComponent(waMessage)}`;
+  // 👇 WhatsApp: cache-busting SOLO para compartir
+  const waShareHref = `https://wa.me/?text=${encodeURIComponent(
+    `Mira este producto: ${productName} — ${cleanUrl}?cache=${Date.now()}`
+  )}`;
 
-  // Compartir en WhatsApp: mensaje + salto de línea + URL limpia
-  const waShareText = `Mira este producto: ${productName}\n${cleanUrl}`;
-  const waShareHref = `https://wa.me/?text=${encodeURIComponent(waShareText)}`;
+  // 👇 WhatsApp: CTA para comprar directo
+  const waBuyHref = `https://wa.me/573014564861?text=${encodeURIComponent(
+    waMessage
+  )}`;
 
-  // Otras redes con URL canónica limpia
-  const fbHref = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(cleanUrl)}`;
-  const xHref = `https://twitter.com/intent/tweet?url=${encodeURIComponent(cleanUrl)}&text=${encodeURIComponent(productName)}`;
+  // 👇 Facebook y X usan la URL limpia (sin parámetros)
+  const fbHref = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+    cleanUrl
+  )}`;
+
+  const xHref = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+    cleanUrl
+  )}&text=${encodeURIComponent(productName)}`;
+
   const igHref = 'https://www.instagram.com/vibetechcol';
 
   const copyLink = async () => {
     try {
+      // copiamos la URL limpia
       await navigator.clipboard.writeText(cleanUrl);
-    } catch { /* noop */ }
+    } catch {
+      // noop
+    }
   };
 
   return (
