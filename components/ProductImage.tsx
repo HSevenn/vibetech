@@ -6,11 +6,12 @@ type Props = {
 
 export default function ProductImage({ src, alt }: Props) {
   return (
-    <div className="w-full aspect-square bg-neutral-100 dark:bg-neutral-900 rounded-lg overflow-hidden flex items-center justify-center">
+    <div className="w-full aspect-square rounded-lg overflow-hidden border bg-neutral-100 dark:bg-neutral-900">
       <img
         src={src}
         alt={alt}
         className="w-full h-full object-cover"
+        loading="eager"
       />
     </div>
   );
