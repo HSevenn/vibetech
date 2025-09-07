@@ -25,6 +25,23 @@ export const metadata: Metadata = {
   },
 };
 
+openGraph: {
+  siteName: 'VibeTech',
+  type: 'website',
+  images: [
+    {
+      url: '/og-default.jpg',
+      width: 1200,
+      height: 630,
+      alt: 'VibeTech — Tecnología que vibra contigo',
+    },
+  ],
+},
+twitter: {
+  card: 'summary_large_image',
+  images: ['/og-default.jpg'],
+},
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
