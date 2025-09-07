@@ -10,39 +10,41 @@ import {
 } from 'react-icons/fa';
 
 type Props = {
-  url: string;          // URL canónica del producto
+  url: string;          // URL canónica del producto (ej: https://www.vibetechvibe.com/productos/slug)
   productName: string;  // Nombre del producto
   waMessage: string;    // Mensaje para el botón "Comprar por WhatsApp"
 };
 
 export default function ShareButtons({ url, productName, waMessage }: Props) {
-  // 👇 cache-busting para que WhatsApp muestre la miniatura siempre
-  const shareUrl = `${url}?v=${Date.now()}`;
+  // ✅ Asegura URL limpia (sin ?query ni #hash)
+  const cleanUrl = (() => {
+    try {
+      const u = new URL(url);
+      u.search = '';
+      u.hash = '';
+      return u.toString();
+    } catch {
+      // por si llega relativa o malformada
+      return url.split('?')[0].split('#')[0];
+    }
+  })();
 
-  const waBuyHref = `https://wa.me/573014564861?text=${encodeURIComponent(
-    waMessage
-  )}`;
+  // CTA compra directa
+  const waBuyHref = `https://wa.me/573014564861?text=${encodeURIComponent(waMessage)}`;
 
-  const waShareHref = `https://wa.me/?text=${encodeURIComponent(
-    `Mira este producto: ${productName} — ${shareUrl}`
-  )}`;
+  // Compartir en WhatsApp: mensaje + salto de línea + URL limpia
+  const waShareText = `Mira este producto: ${productName}\n${cleanUrl}`;
+  const waShareHref = `https://wa.me/?text=${encodeURIComponent(waShareText)}`;
 
-  const fbHref = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-    url
-  )}`;
-
-  const xHref = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
-    url
-  )}&text=${encodeURIComponent(productName)}`;
-
+  // Otras redes con URL canónica limpia
+  const fbHref = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(cleanUrl)}`;
+  const xHref = `https://twitter.com/intent/tweet?url=${encodeURIComponent(cleanUrl)}&text=${encodeURIComponent(productName)}`;
   const igHref = 'https://www.instagram.com/vibetechcol';
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl); // también con cache-busting
-    } catch {
-      // noop
-    }
+      await navigator.clipboard.writeText(cleanUrl);
+    } catch { /* noop */ }
   };
 
   return (
@@ -57,7 +59,7 @@ export default function ShareButtons({ url, productName, waMessage }: Props) {
         </Link>
       </div>
 
-      {/* Botones de compartir (transparentes, amigables con tema claro/oscuro) */}
+      {/* Botones de compartir */}
       <div className="mt-4 flex flex-wrap gap-2">
         <a
           href={waShareHref}
