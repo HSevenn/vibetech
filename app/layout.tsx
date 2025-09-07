@@ -4,7 +4,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || 'https://www.vibetechvibe.com'; // 👈 usa la env correcta
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://www.vibetechvibe.com';
 
 export const metadata: Metadata = {
   title: 'VibeTech — Tecnología que vibra contigo',
@@ -16,9 +16,10 @@ export const metadata: Metadata = {
     siteName: 'VibeTech',
     locale: 'es_CO',
     type: 'website',
+    url: 'https://www.vibetechvibe.com/', // 👈 añadido og:url
     images: [
       {
-        url: 'https://www.vibetechvibe.com/og-default.jpg', // 👈 absoluta
+        url: 'https://www.vibetechvibe.com/og-default.jpg',
         width: 1200,
         height: 630,
         alt: 'VibeTech — Tecnología que vibra contigo',
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
 
   twitter: {
     card: 'summary_large_image',
-    images: ['https://www.vibetechvibe.com/og-default.jpg'], // 👈 absoluta
+    images: ['https://www.vibetechvibe.com/og-default.jpg'],
   },
 
   icons: {
@@ -42,6 +43,11 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: '/vibetech_icon_180.png?v=2' }],
   },
+
+  // Opcional: solo si en el futuro usas una app de Facebook
+  // other: {
+  //   'fb:app_id': 'TU_APP_ID',
+  // },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
