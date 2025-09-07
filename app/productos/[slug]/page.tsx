@@ -4,12 +4,27 @@ import type { Metadata } from 'next';
 import { fetchProductBySlug } from '@/lib/products';
 import ShareButtons from '@/components/ShareButtons';
 
+const BASE = 'https://www.vibetechvibe.com';
+
 function formatCOP(cents: number) {
   return cents.toLocaleString('es-CO', {
     style: 'currency',
     currency: 'COP',
     minimumFractionDigits: 0,
   });
+}
+
+// Util para garantizar URLs absolutas (y fallback)
+function toAbsolute(src?: string | null) {
+  if (!src) return `${BASE}/og-default.jpg`;
+  try {
+    // si ya es absoluta, respétala
+    const u = new URL(src);
+    return u.toString();
+  } catch {
+    // si viene relativa (/img.jpg), hazla absoluta
+    return `${BASE}${src.startsWith('/') ? src : `/${src}`}`;
+  }
 }
 
 type Props = { params: { slug: string } };
@@ -19,33 +34,57 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const product = await fetchProductBySlug(params.slug);
+
+    // Si no existe el producto
     if (!product) {
+      const notFoundUrl = `${BASE}/productos/${params.slug}`;
       return {
         title: 'Producto no encontrado',
         description: 'Este producto no existe en VibeTech.',
+        alternates: { canonical: notFoundUrl },
+        openGraph: {
+          type: 'product',
+          url: notFoundUrl,
+          siteName: 'VibeTech',
+          title: 'Producto no encontrado',
+          description: 'Este producto no existe en VibeTech.',
+          images: [{ url: `${BASE}/og-default.jpg`, width: 1200, height: 630 }],
+          locale: 'es_CO',
+        },
+        twitter: {
+          card: 'summary_large_image',
+          title: 'Producto no encontrado',
+          description: 'Este producto no existe en VibeTech.',
+          images: [`${BASE}/og-default.jpg`],
+        },
       };
     }
 
-    const url = `https://vibetechvibe.com/productos/${product.slug}`;
+    const canonical = `${BASE}/productos/${product.slug}`;
+    const title = product.name;
+    const desc =
+      (product.description?.trim() || 'Descubre este producto en VibeTech.')
+        .slice(0, 180); // corto amable para tarjetas
+    const img = toAbsolute(product.imageUrl); // absoluta + fallback
+
     return {
-      title: product.name,
-      description: product.description ?? 'Descubre este producto en VibeTech.',
+      title,
+      description: desc,
+      alternates: { canonical }, // ✅ canonical por producto
       openGraph: {
-        title: product.name,
-        description: product.description ?? 'Descubre este producto en VibeTech.',
-        url,
+        type: 'product',
+        url: canonical,           // ✅ og:url explícito
         siteName: 'VibeTech',
-        images: product.imageUrl
-          ? [{ url: product.imageUrl, width: 800, height: 600, alt: product.name }]
-          : [],
+        title,
+        description: desc,
+        images: [{ url: img, width: 1200, height: 630, alt: title }], // ✅ 1200x630
         locale: 'es_CO',
-        type: 'website',
       },
       twitter: {
         card: 'summary_large_image',
-        title: product.name,
-        description: product.description ?? 'Descubre este producto en VibeTech.',
-        images: product.imageUrl ? [product.imageUrl] : [],
+        title,
+        description: desc,
+        images: [img],
       },
     };
   } catch {
@@ -70,10 +109,12 @@ export default async function ProductPage({ params }: Props) {
     );
   }
 
-  const url = `https://vibetechvibe.com/productos/${product.slug}`;
+  const url = `${BASE}/productos/${product.slug}`;
+
   const shortDesc =
     (product.description || '').trim().slice(0, 140) +
     ((product.description || '').length > 140 ? '…' : '');
+
   const waMessage =
     `Hola, quiero comprar el producto "${product.name}".\n` +
     (shortDesc ? `Descripción: ${shortDesc}\n` : '') +
