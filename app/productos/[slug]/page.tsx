@@ -14,15 +14,13 @@ function formatCOP(cents: number) {
   });
 }
 
-// Util para garantizar URLs absolutas (y fallback)
+// Garantiza URL absoluta y fallback a og-default
 function toAbsolute(src?: string | null) {
   if (!src) return `${BASE}/og-default.jpg`;
   try {
-    // si ya es absoluta, respétala
     const u = new URL(src);
     return u.toString();
   } catch {
-    // si viene relativa (/img.jpg), hazla absoluta
     return `${BASE}${src.startsWith('/') ? src : `/${src}`}`;
   }
 }
@@ -35,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const product = await fetchProductBySlug(params.slug);
 
-    // Si no existe el producto
+    // ---- Producto no encontrado ----
     if (!product) {
       const notFoundUrl = `${BASE}/productos/${params.slug}`;
       return {
@@ -43,7 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description: 'Este producto no existe en VibeTech.',
         alternates: { canonical: notFoundUrl },
         openGraph: {
-          type: 'product',
+          type: 'website', // ✅ corregido
           url: notFoundUrl,
           siteName: 'VibeTech',
           title: 'Producto no encontrado',
@@ -60,24 +58,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       };
     }
 
+    // ---- Producto existente ----
     const canonical = `${BASE}/productos/${product.slug}`;
     const title = product.name;
-    const desc =
-      (product.description?.trim() || 'Descubre este producto en VibeTech.')
-        .slice(0, 180); // corto amable para tarjetas
-    const img = toAbsolute(product.imageUrl); // absoluta + fallback
+    const desc = (product.description?.trim() || 'Descubre este producto en VibeTech.').slice(0, 180);
+    const img = toAbsolute(product.imageUrl); // ✅ absoluta + fallback
 
     return {
       title,
       description: desc,
       alternates: { canonical }, // ✅ canonical por producto
       openGraph: {
-        type: 'product',
-        url: canonical,           // ✅ og:url explícito
+        type: 'website', // ✅ corregido
+        url: canonical,  // ✅ og:url explícito
         siteName: 'VibeTech',
         title,
         description: desc,
-        images: [{ url: img, width: 1200, height: 630, alt: title }], // ✅ 1200x630
+        images: [{ url: img, width: 1200, height: 630, alt: title }],
         locale: 'es_CO',
       },
       twitter: {
@@ -86,6 +83,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description: desc,
         images: [img],
       },
+
+      // (Opcional) etiquetado adicional de producto:
+      // other: {
+      //   'product:price:amount': String(product.price_cents),
+      //   'product:price:currency': 'COP',
+      // },
     };
   } catch {
     return {
