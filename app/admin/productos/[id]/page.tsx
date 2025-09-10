@@ -1,130 +1,110 @@
 // app/admin/productos/[id]/page.tsx
 import { getProductById, updateProduct } from '@/lib/admin/products';
-import { redirect } from 'next/navigation';
 
-type Params = { params: { id: string } };
-
-export const dynamic = 'force-dynamic';
-
-export default async function EditProductPage({ params }: Params) {
+export default async function EditProductPage({ params }: { params: { id: string } }) {
   const p = await getProductById(params.id);
 
   async function onSave(formData: FormData) {
     'use server';
-    const name = String(formData.get('name') || '');
-    const slug = String(formData.get('slug') || '');
-    const description =
-      (formData.get('description')?.toString().trim() || '') || null;
-
-    const price_cents = Number(formData.get('price_cents') || 0) || 0;
-    const old_price_centsRaw = formData.get('old_price_cents')?.toString().trim();
-    const old_price_cents =
-      old_price_centsRaw === '' || old_price_centsRaw == null
-        ? null
-        : Number(old_price_centsRaw) || null;
-
-    const imageUrl = (formData.get('imageUrl')?.toString().trim() || '') || null;
-
-    await updateProduct(p.id, {
-      name,
-      slug,
-      description,
-      price_cents,
-      old_price_cents,
-      imageUrl,
-      // visible no existe en tu tabla; si la agregas, podrías leerlo así:
-      // visible: formData.get('visible') === 'on',
+    const id = params.id;
+    await updateProduct(id, {
+      name: String(formData.get('name') || ''),
+      slug: String(formData.get('slug') || ''),
+      description: String(formData.get('description') || ''),
+      price_cents: Number(formData.get('price_cents') || 0),
+      old_price_cents: formData.get('old_price_cents')
+        ? Number(formData.get('old_price_cents'))
+        : null,
+      imageUrl: String(formData.get('imageUrl') || ''),
+      visible: formData.get('visible') === 'on',
     });
-
-    redirect('/admin/productos');
   }
 
   return (
-    <form action={onSave} className="space-y-4">
-      <div>
-        <label className="block text-sm mb-1">Nombre</label>
-        <input
-          name="name"
-          defaultValue={p.name}
-          className="w-full input"
-          required
-        />
-      </div>
+    <div className="space-y-4">
+      <h1 className="text-xl font-semibold">Editar producto</h1>
 
-      <div>
-        <label className="block text-sm mb-1">Slug</label>
-        <input
-          name="slug"
-          defaultValue={p.slug}
-          className="w-full input"
-          required
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm mb-1">Descripción</label>
-        <textarea
-          name="description"
-          defaultValue={p.description ?? ''}   // 👈 aquí el fix
-          rows={6}
-          className="w-full textarea"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <form action={onSave} className="space-y-4">
         <div>
-          <label className="block text-sm mb-1">Precio (centavos)</label>
+          <label className="block text-sm font-medium mb-1">Nombre</label>
           <input
-            name="price_cents"
-            type="number"
-            min={0}
-            step={1}
-            defaultValue={p.price_cents}
-            className="w-full input"
-            required
+            type="text"
+            name="name"
+            defaultValue={p?.name ?? ''}
+            className="input w-full"
           />
         </div>
 
         <div>
-          <label className="block text-sm mb-1">Precio anterior (centavos)</label>
+          <label className="block text-sm font-medium mb-1">Slug</label>
           <input
-            name="old_price_cents"
-            type="number"
-            min={0}
-            step={1}
-            defaultValue={p.old_price_cents ?? ''}
-            className="w-full input"
+            type="text"
+            name="slug"
+            defaultValue={p?.slug ?? ''}
+            className="input w-full"
           />
         </div>
-      </div>
 
-      <div>
-        <label className="block text-sm mb-1">Imagen principal (URL pública)</label>
-        <input
-          name="imageUrl"
-          defaultValue={p.imageUrl ?? ''}      // usa primer elemento de images
-          className="w-full input"
-          placeholder="products/archivo.jpg"
-        />
-      </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Descripción</label>
+          <textarea
+            name="description"
+            defaultValue={p?.description ?? ''}
+            className="textarea w-full"
+          />
+        </div>
 
-      {/* Si en tu tabla agregas una columna boolean 'visible',
-          entonces descomenta este bloque y también en updateProduct */}
-      {false && (
-        <label className="inline-flex items-center gap-2">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Precio (centavos)
+            </label>
+            <input
+              type="number"
+              name="price_cents"
+              defaultValue={p?.price_cents ?? 0}
+              className="input w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Precio anterior (centavos)
+            </label>
+            <input
+              type="number"
+              name="old_price_cents"
+              defaultValue={p?.old_price_cents ?? ''}
+              className="input w-full"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Imagen principal (URL pública)
+          </label>
+          <input
+            type="text"
+            name="imageUrl"
+            defaultValue={p?.imageUrl ?? ''}
+            className="input w-full"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
           <input
             type="checkbox"
             name="visible"
-            defaultChecked={true} // p.visible !== false
+            defaultChecked={p?.visible ?? true}
           />
-          Visible
-        </label>
-      )}
+          <span className="text-sm">Visible</span>
+        </div>
 
-      <div className="flex gap-3 pt-2">
-        <button className="btn btn-primary" type="submit">Guardar</button>
-        <a href="/admin/productos" className="btn btn-outline">Cancelar</a>
-      </div>
-    </form>
+        <button type="submit" className="btn btn-primary">
+          Guardar
+        </button>
+      </form>
+    </div>
   );
 }
