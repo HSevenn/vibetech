@@ -4,10 +4,10 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-server';
 
 // ===== Listar =====
 export async function listProducts() {
-  // NO pedimos imageUrl porque no existe en tu tabla; y visible puede no existir.
+  // No pedimos imageUrl porque no existe como columna; y 'visible' no está en tu tabla.
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, slug, price_cents, old_price_cents') // 👈 columnas reales
+    .select('id, name, slug, price_cents, old_price_cents') // columnas reales
     .order('name', { ascending: true });
 
   if (error) {
@@ -15,7 +15,7 @@ export async function listProducts() {
     return [];
   }
 
-  // añadimos visible=true por compatibilidad con la UI
+  // Añadimos visible=true por compatibilidad con la UI
   return (data ?? []).map((p) => ({ ...p, visible: true }));
 }
 
@@ -32,20 +32,22 @@ export async function getProductById(id: string) {
     throw error;
   }
   if (!data) throw new Error('Producto no encontrado');
-  // compat: expón imageUrl principal si hace falta
+
+  // imagen principal derivada
   const imageUrl =
     Array.isArray((data as any).images) && (data as any).images.length
       ? (data as any).images[0]
       : null;
 
-  return { ...data, imageUrl };
+  // ⚠️ Tu tabla no tiene 'visible', así que lo exponemos con un fallback.
+  return { ...data, imageUrl, visible: true };
 }
 
 // ===== Crear =====
 export async function createProduct(input: {
   name: string;
   slug: string;
-  description?: string;
+  description?: string | null;
   price_cents: number;
   old_price_cents?: number | null;
   imageUrl?: string | null; // lo guardamos como primer elemento de images
@@ -57,8 +59,8 @@ export async function createProduct(input: {
     description: input.description ?? null,
     price_cents: input.price_cents,
     old_price_cents: input.old_price_cents ?? null,
-    images: input.imageUrl ? [input.imageUrl] : [], // 👈 a JSONB
-    // si tienes columna visible en products, descomenta:
+    images: input.imageUrl ? [input.imageUrl] : [], // a JSONB
+    // Si agregas columna 'visible' en 'products', descomenta:
     // visible: input.visible ?? true,
   };
 
@@ -76,10 +78,10 @@ export async function updateProduct(
   input: {
     name: string;
     slug: string;
-    description?: string;
+    description?: string | null;
     price_cents: number;
     old_price_cents?: number | null;
-    imageUrl?: string | null;
+    imageUrl?: string | null; // si viene, reemplaza la principal
     visible?: boolean;
   }
 ) {
@@ -89,7 +91,11 @@ export async function updateProduct(
     description: input.description ?? null,
     price_cents: input.price_cents,
     old_price_cents: input.old_price_cents ?? null,
-    images: input.imageUrl ? [input.imageUrl] : [],
+    // Solo tocar 'images' si nos mandan imageUrl; así no la vacías sin querer
+    ...(input.imageUrl !== undefined
+      ? { images: input.imageUrl ? [input.imageUrl] : [] }
+      : {}),
+    // Si agregas columna 'visible', descomenta:
     // visible: input.visible ?? true,
   };
 
@@ -100,11 +106,18 @@ export async function updateProduct(
   }
 }
 
-// ===== Borrar (con limpieza de featured_products) =====
+// ===== Borrar (limpiando featured_products si no hay ON DELETE CASCADE) =====
 export async function deleteProduct(id: string) {
   // Si tu FK featured_products.product_id → products.id NO tiene ON DELETE CASCADE,
-  // borramos primero las relaciones:
-  await supabase.from('featured_products').delete().eq('product_id', id);
+  // borra primero las relaciones para evitar errores de integridad:
+  const { error: featErr } = await supabase
+    .from('featured_products')
+    .delete()
+    .eq('product_id', id);
+  if (featErr) {
+    // Si la tabla no existe o no hay FK, no pasa nada; solo log
+    console.warn('featured_products cleanup:', featErr.message);
+  }
 
   const { error } = await supabase.from('products').delete().eq('id', id);
   if (error) {
