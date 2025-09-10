@@ -1,29 +1,13 @@
 // app/admin/productos/[id]/page.tsx
 import { getProductById, updateProduct } from '@/lib/admin/products';
 
-type AdminProduct = {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  price_cents: number;
-  old_price_cents?: number | null;
-  imageUrl?: string | null;
-  images?: string[] | null;
-  visible?: boolean | null; // 👈 opcional
-};
+export default async function EditProductPage({ params }: { params: { id: string } }) {
+  const p = await getProductById(params.id);
 
-export const dynamic = 'force-dynamic';
-
-export default async function AdminProductEditPage({
-  params,
-}: { params: { id: string } }) {
-  const raw = await getProductById(params.id);
-  const p = raw as AdminProduct;
-
-  async function onSave(formData: FormData) {
+  async function onSubmit(formData: FormData) {
     'use server';
-    await updateProduct(p.id, {
+
+    const input = {
       name: String(formData.get('name') || ''),
       slug: String(formData.get('slug') || ''),
       description: String(formData.get('description') || ''),
@@ -32,62 +16,73 @@ export default async function AdminProductEditPage({
         ? Number(formData.get('old_price_cents'))
         : null,
       imageUrl: String(formData.get('imageUrl') || ''),
-      // si el checkbox viene marcado => true; si no viene => false
-      ...(formData.has('visible') ? { visible: true } : { visible: false }),
-    });
+      visible: formData.get('visible') ? true : false,
+    };
+
+    await updateProduct(params.id, input);
   }
 
   return (
-    <div className="max-w-3xl">
-      <h1 className="text-xl font-semibold mb-4">Editar producto</h1>
+    <div className="space-y-4">
+      <h1 className="text-xl font-semibold">Editar producto</h1>
 
-      <form action={onSave} className="space-y-4">
+      <form action={onSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm mb-1">Nombre</label>
-          <input name="name" defaultValue={p.name} className="input w-full" />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Slug</label>
-          <input name="slug" defaultValue={p.slug} className="input w-full" />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Descripción</label>
-          <textarea
-            name="description"
-            defaultValue={p.description ?? ''}
-            className="textarea w-full"
+          <label className="block text-sm">Nombre</label>
+          <input
+            type="text"
+            name="name"
+            defaultValue={p.name}
+            className="input input-bordered w-full"
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm mb-1">Precio (COP)</label>
-            <input
-              type="number"
-              name="price_cents"
-              defaultValue={p.price_cents}
-              className="input w-full"
-            />
-          </div>
-          <div>
-            <label className="block text-sm mb-1">Precio anterior (COP)</label>
-            <input
-              type="number"
-              name="old_price_cents"
-              defaultValue={p.old_price_cents ?? undefined}
-              className="input w-full"
-            />
-          </div>
+        <div>
+          <label className="block text-sm">Slug</label>
+          <input
+            type="text"
+            name="slug"
+            defaultValue={p.slug}
+            className="input input-bordered w-full"
+          />
         </div>
 
         <div>
-          <label className="block text-sm mb-1">Imagen principal (URL)</label>
+          <label className="block text-sm">Descripción</label>
+          <textarea
+            name="description"
+            defaultValue={p.description || ''}
+            className="textarea textarea-bordered w-full"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm">Precio</label>
           <input
+            type="number"
+            name="price_cents"
+            defaultValue={p.price_cents}
+            className="input input-bordered w-full"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm">Precio anterior</label>
+          <input
+            type="number"
+            name="old_price_cents"
+            defaultValue={p.old_price_cents ?? ''}
+            className="input input-bordered w-full"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm">Imagen (URL)</label>
+          <input
+            type="text"
             name="imageUrl"
-            defaultValue={p.imageUrl ?? ''}
-            className="input w-full"
+            defaultValue={p.imageUrl || ''}
+            className="input input-bordered w-full"
           />
         </div>
 
@@ -95,15 +90,13 @@ export default async function AdminProductEditPage({
           <input
             type="checkbox"
             name="visible"
-            defaultChecked={!!p.visible ?? true}
+            defaultChecked={p.visible ?? true}
           />
           Visible
         </label>
 
-        <div className="pt-2">
-          <button className="btn btn-primary" type="submit">
-            Guardar
-          </button>
+        <div>
+          <button type="submit" className="btn btn-primary">Guardar</button>
         </div>
       </form>
     </div>
