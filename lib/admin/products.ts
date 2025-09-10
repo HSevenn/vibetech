@@ -1,7 +1,7 @@
 // lib/admin/products.ts
 'use server';
 
-import { supabase } from './supabase';
+import { supabase } from '../supabase'; // 👈 corregido
 
 export async function listProducts() {
   const { data, error } = await supabase
@@ -85,14 +85,6 @@ export async function updateProduct(
 
   if (error) {
     console.error('updateProduct error:', error);
-    throw error;
-  }
-}
-
-export async function deleteProduct(id: string) {
-  const { error } = await supabase.from('products').delete().eq('id', id);
-  if (error) {
-    console.error('deleteProduct error:', error);
     throw error;
   }
 }
