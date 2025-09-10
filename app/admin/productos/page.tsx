@@ -4,12 +4,31 @@ import { listProducts, deleteProduct } from '@/lib/admin/products';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminProductsPage() {
-  const items = await listProducts();
+  let items: any[] = [];
+  let loadError: string | null = null;
+
+  try {
+    items = await listProducts();
+  } catch (e: any) {
+    // Esto evita el 500 y deja un mensaje visible
+    console.error('ADMIN /productos -> listProducts failed:', e);
+    loadError = 'Error cargando productos. Revisa los Function Logs en Vercel.';
+  }
 
   async function onDelete(formData: FormData) {
     'use server';
     const id = formData.get('id') as string;
     await deleteProduct(id);
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-4 border rounded bg-red-50 text-red-700">
+        <h1 className="text-lg font-semibold mb-2">Productos</h1>
+        <p className="mb-3">{loadError}</p>
+        <a href="/admin/productos" className="btn btn-outline">Reintentar</a>
+      </div>
+    );
   }
 
   return (
@@ -34,7 +53,11 @@ export default async function AdminProductsPage() {
               <tr key={p.id} className="border-t">
                 <td className="px-3 py-2">{p.name}</td>
                 <td className="px-3 py-2">
-                  {(p.price_cents/1).toLocaleString('es-CO', {style:'currency', currency:'COP', minimumFractionDigits:0})}
+                  {(p.price_cents / 1).toLocaleString('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    minimumFractionDigits: 0,
+                  })}
                 </td>
                 <td className="px-3 py-2">{p.visible ? 'Sí' : 'No'}</td>
                 <td className="px-3 py-2 text-right">
@@ -47,7 +70,11 @@ export default async function AdminProductsPage() {
               </tr>
             ))}
             {items.length === 0 && (
-              <tr><td className="px-3 py-6 text-neutral-500" colSpan={4}>Sin productos aún.</td></tr>
+              <tr>
+                <td className="px-3 py-6 text-neutral-500" colSpan={4}>
+                  Sin productos aún.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
