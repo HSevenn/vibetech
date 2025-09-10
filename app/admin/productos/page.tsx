@@ -9,21 +9,30 @@ type AdminRow = {
   slug: string;
   price_cents: number;
   old_price_cents: number | null;
-  imageUrl: string | null;
-  visible?: boolean | null; // 👈 opcional, por si la columna no existe aún
+  visible: boolean;
+  imageUrl?: string | null; // 👈 ahora opcional
 };
 
 export default async function AdminProductsPage() {
   let items: AdminRow[] = [];
 
   try {
-    items = await listProducts();
+    const rows = await listProducts();
+    // Garantiza que encaje con AdminRow
+    items = rows.map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      price_cents: p.price_cents,
+      old_price_cents: p.old_price_cents ?? null,
+      visible: p.visible ?? true,
+      imageUrl: p.imageUrl ?? null,
+    }));
   } catch (e) {
     console.error('AdminProductsPage listProducts failed:', e);
     items = [];
   }
 
-  // 🧹 Acción de borrado en el servidor (una sola vez)
   async function onDelete(formData: FormData) {
     'use server';
     const id = String(formData.get('id') || '');
@@ -49,7 +58,6 @@ export default async function AdminProductsPage() {
               <th className="px-3 py-2 w-40"></th>
             </tr>
           </thead>
-
           <tbody>
             {items.map((p) => (
               <tr key={p.id} className="border-t">
@@ -63,24 +71,24 @@ export default async function AdminProductsPage() {
                   })}
                 </td>
                 <td className="px-3 py-2 text-center">
-                  {typeof p.visible === 'boolean' ? (p.visible ? 'Sí' : 'No') : '—'}
+                  {p.visible ? 'Sí' : 'No'}
                 </td>
                 <td className="px-3 py-2 text-right">
                   <a className="underline mr-4" href={`/admin/productos/${p.id}`}>
                     Editar
                   </a>
-
-                  {/* Borrar (solo una acción server) */}
                   <form action={onDelete} className="inline">
                     <input type="hidden" name="id" value={p.id} />
-                    <button type="submit" className="text-red-600 underline">
+                    <button
+                      type="submit"
+                      className="text-red-600 underline"
+                    >
                       Borrar
                     </button>
                   </form>
                 </td>
               </tr>
             ))}
-
             {items.length === 0 && (
               <tr>
                 <td className="px-3 py-6 text-neutral-500" colSpan={5}>
