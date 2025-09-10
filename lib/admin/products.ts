@@ -1,13 +1,15 @@
 // lib/admin/products.ts
 'use server';
 
-import { supabase } from '@/lib/supabase';
+import supabase from '../supabase';
 
-/** Lista productos para el panel (orden seguro por nombre) */
+// ===== Listar =====
 export async function listProducts() {
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, slug, description, price_cents, old_price_cents, imageUrl, visible')
+    .select(
+      'id, name, slug, description, price_cents, old_price_cents, imageUrl, visible'
+    )
     .order('name', { ascending: true });
 
   if (error) {
@@ -17,11 +19,13 @@ export async function listProducts() {
   return data ?? [];
 }
 
-/** Trae un producto por id para el editor */
+// ===== Obtener por ID =====
 export async function getProductById(id: string) {
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, slug, description, price_cents, old_price_cents, imageUrl, visible')
+    .select(
+      'id, name, slug, description, price_cents, old_price_cents, imageUrl, visible'
+    )
     .eq('id', id)
     .maybeSingle();
 
@@ -33,7 +37,7 @@ export async function getProductById(id: string) {
   return data;
 }
 
-/** Crea producto */
+// ===== Crear =====
 export async function createProduct(input: {
   name: string;
   slug: string;
@@ -61,7 +65,7 @@ export async function createProduct(input: {
   }
 }
 
-/** Actualiza producto */
+// ===== Actualizar =====
 export async function updateProduct(
   id: string,
   input: {
@@ -93,37 +97,22 @@ export async function updateProduct(
   }
 }
 
-/** 🔥 FALTABA: borra producto */
+// ===== Borrar (única definición) =====
 export async function deleteProduct(id: string) {
-  // Si también tienes tabla featured_products relacionada por product_id,
-  // puedes limpiar primero allí (opcional):
-  // await supabase.from('featured_products').delete().eq('product_id', id);
-
-  const { error } = await supabase.from('products').delete().eq('id', id);
-  if (error) {
-    console.error('deleteProduct error:', error);
-    throw error;
-  }
-}
-
-export async function deleteProduct(id: string) {
-  // Primero borrar relaciones en featured_products
+  // 1) Si existe tabla featured_products, borra relaciones por FK
   const { error: featErr } = await supabase
     .from('featured_products')
     .delete()
     .eq('product_id', id);
 
-  if (featErr) {
+  // Si la tabla no existe, algunos proyectos devuelven código 42P01; lo ignoramos
+  if (featErr && (featErr as any).code !== '42P01') {
     console.error('deleteProduct featured_products error:', featErr);
     throw featErr;
   }
 
-  // Luego borrar el producto
-  const { error } = await supabase
-    .from('products')
-    .delete()
-    .eq('id', id);
-
+  // 2) Borrar el producto
+  const { error } = await supabase.from('products').delete().eq('id', id);
   if (error) {
     console.error('deleteProduct products error:', error);
     throw error;
