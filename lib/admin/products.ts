@@ -105,3 +105,27 @@ export async function deleteProduct(id: string) {
     throw error;
   }
 }
+
+export async function deleteProduct(id: string) {
+  // Primero borrar relaciones en featured_products
+  const { error: featErr } = await supabase
+    .from('featured_products')
+    .delete()
+    .eq('product_id', id);
+
+  if (featErr) {
+    console.error('deleteProduct featured_products error:', featErr);
+    throw featErr;
+  }
+
+  // Luego borrar el producto
+  const { error } = await supabase
+    .from('products')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('deleteProduct products error:', error);
+    throw error;
+  }
+}
