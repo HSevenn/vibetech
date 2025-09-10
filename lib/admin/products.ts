@@ -14,12 +14,8 @@ export async function listProducts() {
     return [];
   }
 
-  // Compatibilidad: visible e imageUrl (no existen en tu tabla)
-  return (data ?? []).map((p) => ({
-    ...p,
-    visible: true,
-    imageUrl: null as string | null,
-  }));
+  // añadimos visible=true por compatibilidad con la UI
+  return (data ?? []).map((p) => ({ ...p, visible: true }));
 }
 
 // ===== Obtener por id =====
@@ -41,7 +37,8 @@ export async function getProductById(id: string) {
       ? (data as any).images[0]
       : null;
 
-  return { ...data, imageUrl };
+  // 👇 agregamos visible para evitar el error de tipo
+  return { ...data, imageUrl, visible: true };
 }
 
 // ===== Crear =====
@@ -61,9 +58,11 @@ export async function createProduct(input: {
     price_cents: input.price_cents,
     old_price_cents: input.old_price_cents ?? null,
     images: input.imageUrl ? [input.imageUrl] : [],
+    // visible: input.visible ?? true, // si algún día agregas la columna
   };
 
   const { error } = await supabase.from('products').insert([payload]);
+
   if (error) {
     console.error('createProduct error:', error);
     throw error;
@@ -90,6 +89,7 @@ export async function updateProduct(
     price_cents: input.price_cents,
     old_price_cents: input.old_price_cents ?? null,
     images: input.imageUrl ? [input.imageUrl] : [],
+    // visible: input.visible ?? true,
   };
 
   const { error } = await supabase.from('products').update(payload).eq('id', id);
@@ -99,9 +99,10 @@ export async function updateProduct(
   }
 }
 
-// ===== Borrar (con limpieza de featured_products) =====
+// ===== Borrar =====
 export async function deleteProduct(id: string) {
   await supabase.from('featured_products').delete().eq('product_id', id);
+
   const { error } = await supabase.from('products').delete().eq('id', id);
   if (error) {
     console.error('deleteProduct products error:', error);
