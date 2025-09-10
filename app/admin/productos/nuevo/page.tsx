@@ -1,102 +1,112 @@
 // app/admin/productos/nuevo/page.tsx
-import { createProduct } from '@/lib/admin/products';
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+
+function toSlug(s: string) {
+  return s
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quita tildes
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
 export default function NewProductPage() {
-  async function onCreate(formData: FormData) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+
+  const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [description, setDescription] = useState('');
+  const [price, setPrice] = useState<number | ''>('');
+  const [oldPrice, setOldPrice] = useState<number | ''>('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [visible, setVisible] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function createOnServer(fd: FormData) {
     'use server';
+    const { createProduct } = await import('@/lib/admin/products');
+    await createProduct({
+      name: String(fd.get('name') || ''),
+      slug: String(fd.get('slug') || ''),
+      description: String(fd.get('description') || ''),
+      price_cents: Number(fd.get('price_cents') || 0),
+      old_price_cents: fd.get('old_price_cents') ? Number(fd.get('old_price_cents')) : null,
+      imageUrl: String(fd.get('imageUrl') || ''),
+      visible: String(fd.get('visible')) === 'on',
+    });
+  }
 
-    // ✅ leer y normalizar campos
-    const name = String(formData.get('name') || '').trim();
-    const slug = String(formData.get('slug') || '').trim();
-    const description = String(formData.get('description') || '').trim();
-    const price_cents = Number(formData.get('price_cents') || 0);
-    const old_price_raw = formData.get('old_price_cents');
-    const old_price_cents =
-      old_price_raw === null || old_price_raw === ''
-        ? null
-        : Number(old_price_raw);
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setErr(null);
 
-    const imageUrlRaw = String(formData.get('imageUrl') || '').trim();
-    const visible = formData.get('visible') === 'on';
-
-    // ✅ validaciones mínimas (evita excepciones raras en cliente)
-    if (!name || !slug || !Number.isFinite(price_cents) || price_cents <= 0) {
-      // vuelve a la lista con señal de error (sin romper la página)
-      redirect('/admin/productos?error=validacion');
+    const finalSlug = slug.trim() || toSlug(name);
+    if (!name.trim() || !finalSlug) {
+      setErr('Nombre y Slug son obligatorios.');
+      return;
+    }
+    if (price === '' || isNaN(Number(price))) {
+      setErr('Precio inválido.');
+      return;
     }
 
-    // permitir rutas relativas o absolutas
-    const imageUrl = imageUrlRaw || '';
+    const fd = new FormData(e.currentTarget);
+    fd.set('slug', finalSlug);
 
-    try {
-      await createProduct({
-        name,
-        slug,
-        description,
-        price_cents,
-        old_price_cents,
-        imageUrl,
-        visible,
-      });
-
-      // revalidar listado y volver
-      revalidatePath('/admin/productos');
-      redirect('/admin/productos');
-    } catch (err) {
-      console.error('createProduct failed:', err);
-      redirect('/admin/productos?error=crear');
-    }
+    startTransition(async () => {
+      try {
+        await createOnServer(fd);
+        router.replace('/admin/productos');
+      } catch (error: any) {
+        setErr(error?.message || 'No se pudo crear el producto.');
+      }
+    });
   }
 
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Nuevo producto</h1>
 
-      <form action={onCreate} className="space-y-4">
+      {err && (
+        <div className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm">
+          {err}
+        </div>
+      )}
+
+      <form onSubmit={onSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Nombre</label>
-          <input name="name" type="text" className="input w-full" required />
+          <input className="input w-full" name="name" value={name}
+                 onChange={(e)=>setName(e.target.value)} />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Slug</label>
-          <input name="slug" type="text" className="input w-full" required />
+          <label className="block text-sm font-medium mb-1">
+            Slug <span className="opacity-60">(si lo dejas vacío se genera automáticamente)</span>
+          </label>
+          <input className="input w-full" name="slug" value={slug}
+                 onChange={(e)=>setSlug(e.target.value)} placeholder="mi-producto" />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1">Descripción</label>
-          <textarea name="description" className="textarea w-full" />
+          <textarea className="textarea w-full" name="description"
+                    value={description} onChange={(e)=>setDescription(e.target.value)} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">
-              Precio (centavos)
-            </label>
-            <input
-              name="price_cents"
-              type="number"
-              min={0}
-              step={1}
-              className="input w-full"
-              required
-            />
+            <label className="block text-sm font-medium mb-1">Precio (centavos)</label>
+            <input className="input w-full" name="price_cents" type="number"
+                   value={price} onChange={(e)=>setPrice(e.target.value === '' ? '' : Number(e.target.value))} />
           </div>
-
           <div>
-            <label className="block text-sm font-medium mb-1">
-              Precio anterior (centavos)
-            </label>
-            <input
-              name="old_price_cents"
-              type="number"
-              min={0}
-              step={1}
-              className="input w-full"
-              placeholder="Opcional"
-            />
+            <label className="block text-sm font-medium mb-1">Precio anterior (centavos)</label>
+            <input className="input w-full" name="old_price_cents" type="number"
+                   value={oldPrice} onChange={(e)=>setOldPrice(e.target.value === '' ? '' : Number(e.target.value))} />
           </div>
         </div>
 
@@ -104,28 +114,23 @@ export default function NewProductPage() {
           <label className="block text-sm font-medium mb-1">
             Imagen principal (URL)
           </label>
-          <input
-            name="imageUrl"
-            type="url"
-            className="input w-full"
-            placeholder="https://.../products/archivo.jpg o /products/archivo.jpg"
-          />
-          <p className="mt-1 text-xs text-muted-foreground">
-            Pega la URL pública de Supabase Storage o una ruta relativa servida
-            desde tu dominio.
+          <input className="input w-full" name="imageUrl" value={imageUrl}
+                 onChange={(e)=>setImageUrl(e.target.value)}
+                 placeholder="https://... o /products/archivo.jpg" />
+          <p className="text-xs opacity-70 mt-1">
+            Pega la URL pública (Supabase Storage) o una ruta relativa servida desde tu dominio.
           </p>
         </div>
 
-        <label className="inline-flex items-center gap-2">
-          <input type="checkbox" name="visible" defaultChecked />
+        <div className="flex items-center gap-2">
+          <input type="checkbox" name="visible" checked={visible}
+                 onChange={(e)=>setVisible(e.target.checked)} />
           <span className="text-sm">Visible</span>
-        </label>
-
-        <div className="pt-2">
-          <button type="submit" className="btn btn-primary">
-            Crear
-          </button>
         </div>
+
+        <button disabled={pending} className="btn btn-primary" type="submit">
+          {pending ? 'Creando…' : 'Crear'}
+        </button>
       </form>
     </div>
   );
