@@ -1,102 +1,142 @@
 // app/admin/productos/[id]/page.tsx
 import { getProductById, updateProduct } from '@/lib/admin/products';
+import { redirect } from 'next/navigation';
 
-export default async function EditProductPage({ params }: { params: { id: string } }) {
-  const p = await getProductById(params.id);
+export const dynamic = 'force-dynamic';
 
-  async function onSubmit(formData: FormData) {
+type AdminProduct = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  price_cents: number;
+  old_price_cents: number | null;
+  imageUrl: string | null;
+  images?: string[] | null;
+  visible: boolean; // 👈 faltaba en tu tipo
+};
+
+type Props = { params: { id: string } };
+
+export default async function EditProductPage({ params }: Props) {
+  const p = (await getProductById(params.id)) as AdminProduct;
+
+  async function save(formData: FormData) {
     'use server';
 
-    const input = {
-      name: String(formData.get('name') || ''),
-      slug: String(formData.get('slug') || ''),
-      description: String(formData.get('description') || ''),
-      price_cents: Number(formData.get('price_cents') || 0),
-      old_price_cents: formData.get('old_price_cents')
-        ? Number(formData.get('old_price_cents'))
-        : null,
-      imageUrl: String(formData.get('imageUrl') || ''),
-      visible: formData.get('visible') ? true : false,
-    };
+    const name = String(formData.get('name') ?? '').trim();
+    const slug = String(formData.get('slug') ?? '').trim();
+    const description = String(formData.get('description') ?? '').trim() || null;
+    const price_cents = Number(formData.get('price_cents') ?? 0) || 0;
+    const old_price_raw = formData.get('old_price_cents');
+    const old_price_cents =
+      old_price_raw === null || old_price_raw === ''
+        ? null
+        : Number(old_price_raw);
+    const imageUrl =
+      (String(formData.get('imageUrl') ?? '').trim() || null) as string | null;
 
-    await updateProduct(params.id, input);
+    // Checkbox: viene como "on" si está marcado, o null si no
+    const visible = formData.get('visible') === 'on';
+
+    await updateProduct(p.id, {
+      name,
+      slug,
+      description,
+      price_cents,
+      old_price_cents,
+      imageUrl,
+      visible,
+    });
+
+    redirect('/admin/productos');
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <h1 className="text-xl font-semibold">Editar producto</h1>
 
-      <form action={onSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm">Nombre</label>
+      <form action={save} className="grid gap-4 max-w-2xl">
+        <label className="grid gap-1">
+          <span className="text-sm font-medium">Nombre</span>
           <input
-            type="text"
             name="name"
             defaultValue={p.name}
-            className="input input-bordered w-full"
+            required
+            className="input"
           />
-        </div>
+        </label>
 
-        <div>
-          <label className="block text-sm">Slug</label>
+        <label className="grid gap-1">
+          <span className="text-sm font-medium">Slug</span>
           <input
-            type="text"
             name="slug"
             defaultValue={p.slug}
-            className="input input-bordered w-full"
+            required
+            className="input"
           />
-        </div>
+        </label>
 
-        <div>
-          <label className="block text-sm">Descripción</label>
+        <label className="grid gap-1">
+          <span className="text-sm font-medium">Descripción</span>
           <textarea
             name="description"
-            defaultValue={p.description || ''}
-            className="textarea textarea-bordered w-full"
+            defaultValue={p.description ?? ''}
+            rows={5}
+            className="textarea"
           />
+        </label>
+
+        <div className="grid grid-cols-2 gap-4">
+          <label className="grid gap-1">
+            <span className="text-sm font-medium">Precio (centavos)</span>
+            <input
+              name="price_cents"
+              type="number"
+              min={0}
+              step={1}
+              required
+              defaultValue={p.price_cents}
+              className="input"
+            />
+          </label>
+
+          <label className="grid gap-1">
+            <span className="text-sm font-medium">Precio anterior (centavos)</span>
+            <input
+              name="old_price_cents"
+              type="number"
+              min={0}
+              step={1}
+              defaultValue={p.old_price_cents ?? ''}
+              className="input"
+            />
+          </label>
         </div>
 
-        <div>
-          <label className="block text-sm">Precio</label>
+        <label className="grid gap-1">
+          <span className="text-sm font-medium">Imagen principal (URL pública)</span>
           <input
-            type="number"
-            name="price_cents"
-            defaultValue={p.price_cents}
-            className="input input-bordered w-full"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm">Precio anterior</label>
-          <input
-            type="number"
-            name="old_price_cents"
-            defaultValue={p.old_price_cents ?? ''}
-            className="input input-bordered w-full"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm">Imagen (URL)</label>
-          <input
-            type="text"
             name="imageUrl"
-            defaultValue={p.imageUrl || ''}
-            className="input input-bordered w-full"
+            defaultValue={p.imageUrl ?? ''}
+            placeholder="/products/mi-imagen.jpg o URL absoluta"
+            className="input"
           />
-        </div>
+        </label>
 
         <label className="inline-flex items-center gap-2">
           <input
             type="checkbox"
             name="visible"
-            defaultChecked={p.visible ?? true}
+            // Si en DB no existiera o es null, lo mostramos marcado.
+            defaultChecked={p.visible !== false}
           />
           Visible
         </label>
 
-        <div>
+        <div className="pt-2 flex gap-3">
           <button type="submit" className="btn btn-primary">Guardar</button>
+          <a href="/admin/productos" className="btn btn-outline">Cancelar</a>
         </div>
       </form>
     </div>
