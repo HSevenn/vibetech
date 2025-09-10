@@ -3,17 +3,18 @@ import { listProducts, deleteProduct } from '@/lib/admin/products';
 
 export const dynamic = 'force-dynamic';
 
+type AdminRow = {
+  id: string;
+  name: string;
+  slug: string;
+  price_cents: number;
+  old_price_cents: number | null;
+  imageUrl: string | null;
+  visible?: boolean | null; // 👈 opcional, por si la columna no existe aún
+};
+
 export default async function AdminProductsPage() {
-  // 🚦 Fallback seguro: si algo falla al listar, mostramos arreglo vacío
-  let items: Array<{
-    id: string;
-    name: string;
-    slug: string;
-    price_cents: number;
-    old_price_cents: number | null;
-    imageUrl: string | null;
-    visible: boolean;
-  }> = [];
+  let items: AdminRow[] = [];
 
   try {
     items = await listProducts();
@@ -22,7 +23,7 @@ export default async function AdminProductsPage() {
     items = [];
   }
 
-  // 🧹 Acción de borrado en el servidor
+  // 🧹 Acción de borrado en el servidor (una sola vez)
   async function onDelete(formData: FormData) {
     'use server';
     const id = String(formData.get('id') || '');
@@ -48,6 +49,7 @@ export default async function AdminProductsPage() {
               <th className="px-3 py-2 w-40"></th>
             </tr>
           </thead>
+
           <tbody>
             {items.map((p) => (
               <tr key={p.id} className="border-t">
@@ -61,29 +63,17 @@ export default async function AdminProductsPage() {
                   })}
                 </td>
                 <td className="px-3 py-2 text-center">
-                  {p.visible ? 'Sí' : 'No'}
+                  {typeof p.visible === 'boolean' ? (p.visible ? 'Sí' : 'No') : '—'}
                 </td>
                 <td className="px-3 py-2 text-right">
                   <a className="underline mr-4" href={`/admin/productos/${p.id}`}>
                     Editar
                   </a>
 
-                  {/* Botón borrar con confirmación en el cliente */}
+                  {/* Borrar (solo una acción server) */}
                   <form action={onDelete} className="inline">
                     <input type="hidden" name="id" value={p.id} />
-                    <button
-                      type="submit"
-                      className="text-red-600 underline"
-                      formAction={async (formData) => {
-                        'use server';
-                        // Confirmación del lado del cliente no se puede aquí,
-                        // así que usamos un segundo endpoint "client" si lo deseas.
-                        // Simplificamos: borrado directo desde server action.
-                        const id = String(formData.get('id') || '');
-                        if (!id) return;
-                        await deleteProduct(id);
-                      }}
-                    >
+                    <button type="submit" className="text-red-600 underline">
                       Borrar
                     </button>
                   </form>
