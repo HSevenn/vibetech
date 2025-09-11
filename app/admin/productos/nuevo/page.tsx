@@ -1,5 +1,5 @@
 // app/admin/productos/nuevo/page.tsx
-import { createProductAction } from '../actions';
+import { createProductAction } from '@/app/admin/productos/actions';
 
 export default function NewProductPage() {
   return (
@@ -9,7 +9,12 @@ export default function NewProductPage() {
       <form action={createProductAction} className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Nombre</label>
-          <input type="text" name="name" className="input w-full" required />
+          <input
+            type="text"
+            name="name"
+            className="input w-full"
+            required
+          />
         </div>
 
         <div>
@@ -17,22 +22,31 @@ export default function NewProductPage() {
           <input
             type="text"
             name="slug"
-            placeholder="(opcional, se genera desde el nombre)"
+            placeholder="ej: mi-producto-unico"
             className="input w-full"
+            required
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1">Descripción</label>
-          <textarea name="description" className="textarea w-full" />
+          <textarea
+            name="description"
+            className="textarea w-full"
+          />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">
               Precio (centavos)
             </label>
-            <input type="number" name="price_cents" className="input w-full" />
+            <input
+              type="number"
+              name="price_cents"
+              className="input w-full"
+              required
+            />
           </div>
 
           <div>
@@ -49,24 +63,28 @@ export default function NewProductPage() {
 
         <div>
           <label className="block text-sm font-medium mb-1">
-            Imagen principal (URL pública)
+            Imagen principal (URL)
           </label>
           <input
             type="text"
             name="imageUrl"
-            placeholder="https://... o /products/archivo.jpg"
+            placeholder="https://..."
             className="input w-full"
           />
+          <p className="text-xs text-muted-foreground">
+            Pega la URL pública de Supabase Storage o una ruta servida desde tu dominio.
+          </p>
         </div>
 
-        <label className="inline-flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <input type="checkbox" name="visible" defaultChecked />
           <span className="text-sm">Visible</span>
-        </label>
+        </div>
 
-        <button type="submit" className="btn btn-primary">Crear</button>
+        <button type="submit" className="btn btn-primary">
+          Crear
+        </button>
       </form>
     </div>
   );
 }
-
