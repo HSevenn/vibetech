@@ -4,13 +4,16 @@ import { getProductById, updateProduct } from '@/lib/admin/products';
 export default async function EditProductPage({ params }: { params: { id: string } }) {
   const p = await getProductById(params.id);
 
-  // 👇 fallback seguro para el checkbox
-  const visibleDefault = (p as any)?.visible ?? true;
-
   async function onSave(formData: FormData) {
     'use server';
-    const id = params.id;
-    await updateProduct(id, {
+
+    const parseImages = (raw: string): string[] =>
+      raw
+        .split(/\r?\n|,/)
+        .map(s => s.trim())
+        .filter(Boolean);
+
+    await updateProduct(params.id, {
       name: String(formData.get('name') || ''),
       slug: String(formData.get('slug') || ''),
       description: String(formData.get('description') || ''),
@@ -18,10 +21,14 @@ export default async function EditProductPage({ params }: { params: { id: string
       old_price_cents: formData.get('old_price_cents')
         ? Number(formData.get('old_price_cents'))
         : null,
-      imageUrl: String(formData.get('imageUrl') || ''),
+      images: parseImages(String(formData.get('images') || '')),
       visible: formData.get('visible') === 'on',
     });
   }
+
+  const imagesText = Array.isArray(p.images) && p.images.length
+    ? p.images.join('\n')
+    : (p.imageUrl ?? '');
 
   return (
     <div className="space-y-4">
@@ -40,42 +47,37 @@ export default async function EditProductPage({ params }: { params: { id: string
 
         <div>
           <label className="block text-sm font-medium mb-1">Descripción</label>
-          <textarea name="description" defaultValue={p?.description ?? ''} className="textarea w-full" />
+          <textarea name="description" defaultValue={p?.description ?? ''} className="textarea w-full" rows={4}/>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Precio (centavos)</label>
-            <input
-              type="number"
-              name="price_cents"
-              defaultValue={p?.price_cents ?? 0}
-              className="input w-full"
-            />
+            <input type="number" name="price_cents" defaultValue={p?.price_cents ?? 0} className="input w-full" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Precio anterior (centavos)</label>
-            <input
-              type="number"
-              name="old_price_cents"
-              defaultValue={p?.old_price_cents ?? ''}
-              className="input w-full"
-            />
+            <input type="number" name="old_price_cents" defaultValue={p?.old_price_cents ?? ''} className="input w-full" />
           </div>
         </div>
 
+        {/* 👇 nuevo: varias imágenes (una por línea) */}
         <div>
-          <label className="block text-sm font-medium mb-1">Imagen principal (URL pública)</label>
-          <input
-            type="text"
-            name="imageUrl"
-            defaultValue={(p as any)?.imageUrl ?? ''}
-            className="input w-full"
+          <label className="block text-sm font-medium mb-1">Imágenes (una URL por línea)</label>
+          <textarea
+            name="images"
+            defaultValue={imagesText}
+            className="textarea w-full"
+            rows={4}
+            placeholder={`https://.../foto1.jpg\n/products/foto2.jpg`}
           />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Pega URLs públicas de Supabase Storage o rutas relativas como <code>products/mi-foto.jpg</code>.
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <input type="checkbox" name="visible" defaultChecked={visibleDefault} />
+          <input type="checkbox" name="visible" defaultChecked={p?.visible ?? true} />
           <span className="text-sm">Visible</span>
         </div>
 
