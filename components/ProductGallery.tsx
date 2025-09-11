@@ -1,104 +1,78 @@
 'use client';
 
-import { useMemo, useState, useRef } from 'react';
+import { useState } from 'react';
+import Image from 'next/image';
+import Lightbox from 'yet-another-react-lightbox';
+import 'yet-another-react-lightbox/styles.css';
+import Fullscreen from 'yet-another-react-lightbox/plugins/fullscreen';
+import Zoom from 'yet-another-react-lightbox/plugins/zoom';
 
 type Props = {
-  images: string[];   // URLs absolutas o relativas
-  alt: string;        // texto alternativo base
+  images: string[];
+  alt: string;
 };
 
 export default function ProductGallery({ images, alt }: Props) {
-  const pics = useMemo(
-    () => (Array.isArray(images) ? images.filter(Boolean) : []).slice(0, 12),
-    [images]
-  );
-  const [idx, setIdx] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [index, setIndex] = useState(0);
 
-  // Gestos touch (deslizar)
-  const touchStartX = useRef<number | null>(null);
-  const onTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-  const onTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current == null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    if (dx > 40) prev();     // swipe derecha -> foto anterior
-    if (dx < -40) next();    // swipe izquierda -> siguiente
-    touchStartX.current = null;
-  };
-
-  const prev = () => setIdx((i) => (i - 1 + pics.length) % pics.length);
-  const next = () => setIdx((i) => (i + 1) % pics.length);
-
-  if (pics.length === 0) {
-    return <div className="w-full h-64 bg-neutral-200 dark:bg-neutral-800 rounded-lg" />;
+  if (!images || images.length === 0) {
+    return (
+      <div className="w-full aspect-square bg-neutral-200 dark:bg-neutral-800 rounded-lg" />
+    );
   }
 
   return (
-    <div className="w-full">
+    <div className="space-y-3">
       {/* Imagen principal */}
       <div
-        className="relative overflow-hidden rounded-lg border aspect-[4/3] bg-white dark:bg-neutral-900"
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
+        className="relative aspect-square overflow-hidden rounded-xl cursor-pointer"
+        onClick={() => {
+          setIndex(0);
+          setOpen(true);
+        }}
       >
-        <img
-          key={pics[idx]}
-          src={pics[idx]}
-          alt={`${alt} (${idx + 1}/${pics.length})`}
-          className="absolute inset-0 h-full w-full object-contain"
-          draggable={false}
+        <Image
+          src={images[0]}
+          alt={alt}
+          fill
+          className="object-cover"
+          sizes="100vw"
         />
-
-        {pics.length > 1 && (
-          <>
-            <button
-              type="button"
-              onClick={prev}
-              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 px-3 py-2 text-white backdrop-blur hover:bg-black/60"
-              aria-label="Anterior"
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              onClick={next}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 px-3 py-2 text-white backdrop-blur hover:bg-black/60"
-              aria-label="Siguiente"
-            >
-              ›
-            </button>
-
-            <div className="pointer-events-none absolute bottom-2 left-0 right-0 flex justify-center gap-1">
-              {pics.map((_, i) => (
-                <span
-                  key={i}
-                  className={`h-1.5 w-1.5 rounded-full ${i === idx ? 'bg-white' : 'bg-white/50'} `}
-                />
-              ))}
-            </div>
-          </>
-        )}
       </div>
 
-      {/* Tiras de miniaturas */}
-      {pics.length > 1 && (
-        <div className="mt-3 flex gap-2 overflow-x-auto">
-          {pics.map((src, i) => (
+      {/* Miniaturas */}
+      {images.length > 1 && (
+        <div className="flex gap-2">
+          {images.map((src, i) => (
             <button
-              key={src + i}
-              type="button"
-              onClick={() => setIdx(i)}
-              className={`h-16 w-16 shrink-0 overflow-hidden rounded border ${
-                i === idx ? 'ring-2 ring-neutral-900 dark:ring-white' : ''
-              }`}
-              aria-label={`Ver imagen ${i + 1}`}
+              key={i}
+              onClick={() => {
+                setIndex(i);
+                setOpen(true);
+              }}
+              className="relative w-16 h-16 rounded-md overflow-hidden border border-neutral-200 dark:border-neutral-700 hover:ring-2 hover:ring-neutral-400"
             >
-              <img src={src} alt={`${alt} miniatura ${i + 1}`} className="h-full w-full object-cover" />
+              <Image
+                src={src}
+                alt={`${alt} ${i + 1}`}
+                fill
+                className="object-cover"
+                sizes="64px"
+              />
             </button>
           ))}
         </div>
       )}
+
+      {/* Lightbox */}
+      <Lightbox
+        open={open}
+        close={() => setOpen(false)}
+        index={index}
+        slides={images.map((src) => ({ src }))}
+        plugins={[Fullscreen, Zoom]}
+      />
     </div>
   );
 }
