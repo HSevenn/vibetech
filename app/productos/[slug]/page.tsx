@@ -1,9 +1,9 @@
-// app/productos/[slug]/page.tsx
+ // app/productos/[slug]/page.tsx
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { fetchProductBySlug } from '@/lib/products';
+import { fetchProductBySlug, publicUrl } from '@/lib/products'; // 👈 usamos publicUrl
 import ShareButtons from '@/components/ShareButtons';
-import ProductGallery from '@/components/ProductGallery'; // ⬅️ galería nueva
+import ProductGallery from '@/components/ProductGallery';
 
 const BASE = 'https://www.vibetechvibe.com';
 
@@ -15,17 +15,6 @@ function formatCOP(cents: number) {
   });
 }
 
-// URL absoluta (para OG y para la galería)
-function toAbsolute(src?: string | null) {
-  if (!src) return '';
-  try {
-    const u = new URL(src);
-    return u.toString();
-  } catch {
-    return `${BASE}${src.startsWith('/') ? src : `/${src}`}`;
-  }
-}
-
 type Props = { params: { slug: string } };
 
 export const dynamic = 'force-dynamic';
@@ -34,6 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const product = await fetchProductBySlug(params.slug);
 
+    // ---- Producto no encontrado ----
     if (!product) {
       const notFoundUrl = `${BASE}/productos/${params.slug}`;
       return {
@@ -58,16 +48,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       };
     }
 
+    // ---- Producto existente ----
     const canonical = `${BASE}/productos/${product.slug}`;
     const title = product.name;
     const desc = (product.description?.trim() || 'Descubre este producto en VibeTech.').slice(0, 180);
 
-    // Preferimos la 1ª de "images" si existe, si no, imageUrl; y si no, og-default
-    const imagesArr: string[] =
+    // Preferimos images[] ⇒ las convertimos a URL públicas absolutas
+    const imgs =
       Array.isArray((product as any).images) && (product as any).images.length
-        ? (product as any).images.map(toAbsolute).filter(Boolean)
-        : (product.imageUrl ? [toAbsolute(product.imageUrl)] : []);
-    const ogImg = imagesArr[0] || `${BASE}/og-default.jpg`;
+        ? ((product as any).images.map(publicUrl).filter(Boolean) as string[])
+        : [];
+
+    // Fallback: imageUrl normalizado; último fallback: og-default
+    const ogImg = imgs[0] || publicUrl(product.imageUrl) || `${BASE}/og-default.jpg`;
 
     return {
       title,
@@ -128,11 +121,11 @@ export default async function ProductPage({ params }: Props) {
       ? Math.max(0, Math.round(100 - (product.price_cents / product.old_price_cents) * 100))
       : null;
 
-  // Imágenes para la galería (múltiples o única)
-  const images: string[] =
+  // Imágenes para la galería: normalizamos a URL públicas de Supabase
+  const images =
     Array.isArray((product as any).images) && (product as any).images.length
-      ? (product as any).images.map(toAbsolute).filter(Boolean)
-      : (product.imageUrl ? [toAbsolute(product.imageUrl)] : []);
+      ? ((product as any).images.map(publicUrl).filter(Boolean) as string[])
+      : (publicUrl(product.imageUrl) ? [publicUrl(product.imageUrl)!] : []);
 
   return (
     <main className="container mx-auto px-4 py-10">
@@ -165,9 +158,7 @@ export default async function ProductPage({ params }: Props) {
             )}
 
             {discount !== null && discount > 0 && (
-              <span
-                className="ml-1 text-xs font-semibold px-2 py-0.5 rounded bg-green-900/30 text-green-500"
-              >
+              <span className="ml-1 text-xs font-semibold px-2 py-0.5 rounded bg-green-900/30 text-green-500">
                 {discount}% OFF
               </span>
             )}
@@ -179,3 +170,4 @@ export default async function ProductPage({ params }: Props) {
     </main>
   );
 }
+        
