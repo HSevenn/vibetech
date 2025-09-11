@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { fetchProductBySlug } from '@/lib/products';
 import ShareButtons from '@/components/ShareButtons';
-import ProductImage from '@/components/ProductImage'; // 👈 nuevo import
+import ProductGallery from '@/components/ProductGallery'; // ⬅️ galería nueva
 
 const BASE = 'https://www.vibetechvibe.com';
 
@@ -15,9 +15,9 @@ function formatCOP(cents: number) {
   });
 }
 
-// Garantiza URL absoluta y fallback a og-default
+// URL absoluta (para OG y para la galería)
 function toAbsolute(src?: string | null) {
-  if (!src) return `${BASE}/og-default.jpg`;
+  if (!src) return '';
   try {
     const u = new URL(src);
     return u.toString();
@@ -34,7 +34,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const product = await fetchProductBySlug(params.slug);
 
-    // ---- Producto no encontrado ----
     if (!product) {
       const notFoundUrl = `${BASE}/productos/${params.slug}`;
       return {
@@ -59,30 +58,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       };
     }
 
-    // ---- Producto existente ----
     const canonical = `${BASE}/productos/${product.slug}`;
     const title = product.name;
     const desc = (product.description?.trim() || 'Descubre este producto en VibeTech.').slice(0, 180);
-    const img = toAbsolute(product.imageUrl); // absoluta + fallback
+
+    // Preferimos la 1ª de "images" si existe, si no, imageUrl; y si no, og-default
+    const imagesArr: string[] =
+      Array.isArray((product as any).images) && (product as any).images.length
+        ? (product as any).images.map(toAbsolute).filter(Boolean)
+        : (product.imageUrl ? [toAbsolute(product.imageUrl)] : []);
+    const ogImg = imagesArr[0] || `${BASE}/og-default.jpg`;
 
     return {
       title,
       description: desc,
-      alternates: { canonical }, // canonical por producto
+      alternates: { canonical },
       openGraph: {
-        type: 'website',          // (corregido)
-        url: canonical,           // og:url explícito
+        type: 'website',
+        url: canonical,
         siteName: 'VibeTech',
         title,
         description: desc,
-        images: [{ url: img, width: 1200, height: 630, alt: title }],
+        images: [{ url: ogImg, width: 1200, height: 630, alt: title }],
         locale: 'es_CO',
       },
       twitter: {
         card: 'summary_large_image',
         title,
         description: desc,
-        images: [img],
+        images: [ogImg],
       },
     };
   } catch {
@@ -118,19 +122,25 @@ export default async function ProductPage({ params }: Props) {
     (shortDesc ? `Descripción: ${shortDesc}\n` : '') +
     `Precio: ${formatCOP(product.price_cents)}\n¿Está disponible?\n${url}`;
 
-  // calcular descuento
+  // Descuento
   const discount =
     product.old_price_cents && product.old_price_cents > product.price_cents
       ? Math.max(0, Math.round(100 - (product.price_cents / product.old_price_cents) * 100))
       : null;
 
+  // Imágenes para la galería (múltiples o única)
+  const images: string[] =
+    Array.isArray((product as any).images) && (product as any).images.length
+      ? (product as any).images.map(toAbsolute).filter(Boolean)
+      : (product.imageUrl ? [toAbsolute(product.imageUrl)] : []);
+
   return (
     <main className="container mx-auto px-4 py-10">
       <div className="grid gap-8 lg:grid-cols-2">
-        {/* Imagen */}
+        {/* Galería / Imagen */}
         <div>
-          {product.imageUrl ? (
-            <ProductImage src={product.imageUrl} alt={product.name} />
+          {images.length > 0 ? (
+            <ProductGallery images={images} alt={product.name} />
           ) : (
             <div className="w-full aspect-square bg-neutral-200 dark:bg-neutral-800 rounded-lg" />
           )}
@@ -144,30 +154,25 @@ export default async function ProductPage({ params }: Props) {
           </p>
 
           <div className="mb-6 flex items-center gap-3">
-            {/* Precio actual */}
             <span className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
               {formatCOP(product.price_cents)}
             </span>
 
-            {/* Precio anterior */}
             {product.old_price_cents && (
               <span className="text-sm line-through opacity-60">
                 {formatCOP(product.old_price_cents)}
               </span>
             )}
 
-            {/* Badge de descuento */}
             {discount !== null && discount > 0 && (
               <span
-                className="ml-1 text-xs font-semibold px-2 py-0.5 rounded
-                           bg-green-900/30 text-green-500"
+                className="ml-1 text-xs font-semibold px-2 py-0.5 rounded bg-green-900/30 text-green-500"
               >
                 {discount}% OFF
               </span>
             )}
           </div>
 
-          {/* Botones (cliente) */}
           <ShareButtons url={url} productName={product.name} waMessage={waMessage} />
         </div>
       </div>
