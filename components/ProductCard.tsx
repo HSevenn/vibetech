@@ -27,7 +27,6 @@ export default function ProductCard({ p }: { p: Product }) {
         focus-visible:ring-neutral-300 dark:focus-visible:ring-neutral-700
       "
     >
-      {/* Marco de imagen con zoom suave */}
       <div className="relative m-3 overflow-hidden rounded-xl">
         <div className="relative aspect-[4/3]">
           <Image
@@ -35,25 +34,15 @@ export default function ProductCard({ p }: { p: Product }) {
             alt={p.name}
             fill
             sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 33vw"
-            className="
-              object-cover
-              transition-transform duration-300
-              group-hover:scale-[1.04]
-            "
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
           />
-          {/* Sutil overlay al hover para enfatizar el borde */}
-          <div
-            className="
-              pointer-events-none absolute inset-0 rounded-xl
-              ring-1 ring-transparent transition
-              group-hover:ring-neutral-300/70 dark:group-hover:ring-neutral-700/70
-            "
-          />
+          <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-transparent transition group-hover:ring-neutral-300/70 dark:group-hover:ring-neutral-700/70" />
         </div>
       </div>
 
       <div className="p-4">
-        <h3 className="text-base font-semibold leading-snug line-clamp-2 group-hover:underline pointer-events-none">
+        {/* título no seleccionable y con underline sólo al hover */}
+        <h3 className="text-base font-semibold leading-snug line-clamp-2 pointer-events-none group-hover:underline">
           {p.name}
         </h3>
 
@@ -61,7 +50,6 @@ export default function ProductCard({ p }: { p: Product }) {
           {p.description ?? ''}
         </p>
 
-        {/* Precio + tachado + badge juntos */}
         <div className="mt-3 flex items-center gap-2">
           <span className="text-[1.15rem] leading-none font-bold tracking-tight">
             {formatCOP(p.price_cents)}
