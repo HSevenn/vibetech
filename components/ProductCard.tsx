@@ -1,3 +1,4 @@
+// components/ProductCard.tsx
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Product } from '@/lib/products';
@@ -5,7 +6,10 @@ import { formatCOP } from '@/lib/format';
 
 function getDiscount(p: Product) {
   if (!p.old_price_cents || p.old_price_cents <= p.price_cents) return null;
-  const pct = Math.max(0, Math.round(100 - (p.price_cents / p.old_price_cents) * 100));
+  const pct = Math.max(
+    0,
+    Math.round(100 - (p.price_cents / p.old_price_cents) * 100)
+  );
   return pct > 0 ? pct : null;
 }
 
@@ -16,42 +20,32 @@ export default function ProductCard({ p }: { p: Product }) {
   return (
     <Link
       href={`/productos/${p.slug}`}
-      className="
-        group block select-none
-        rounded-2xl border border-neutral-200 bg-white shadow-sm
-        transition-all duration-300
-        hover:-translate-y-[2px] hover:shadow-xl hover:border-neutral-300
-        dark:border-neutral-800 dark:bg-neutral-900
-        dark:hover:border-neutral-700
-        focus-visible:outline-none focus-visible:ring-2
-        focus-visible:ring-neutral-300 dark:focus-visible:ring-neutral-700
-      "
+      className="group block rounded-xl border border-transparent bg-white dark:bg-neutral-900 transition-all duration-300 hover:-translate-y-[2px] hover:shadow-xl select-none"
     >
-      <div className="relative m-3 overflow-hidden rounded-xl">
-        <div className="relative aspect-[4/3]">
-          <Image
-            src={img}
-            alt={p.name}
-            fill
-            sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 33vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
-          />
-          <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-transparent transition group-hover:ring-neutral-300/70 dark:group-hover:ring-neutral-700/70" />
-        </div>
+      {/* Imagen */}
+      <div className="relative aspect-[4/3] overflow-hidden rounded-t-xl">
+        <Image
+          src={img}
+          alt={p.name}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+          priority={false}
+        />
       </div>
 
+      {/* Texto */}
       <div className="p-4">
-        {/* título no seleccionable y con underline sólo al hover */}
-        <h3 className="text-base font-semibold leading-snug line-clamp-2 pointer-events-none group-hover:underline">
+        <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100 line-clamp-2">
           {p.name}
         </h3>
-
-        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+        <p className="mt-1 line-clamp-2 text-sm text-neutral-500 dark:text-neutral-400">
           {p.description ?? ''}
         </p>
 
+        {/* Precio + descuento */}
         <div className="mt-3 flex items-center gap-2">
-          <span className="text-[1.15rem] leading-none font-bold tracking-tight">
+          <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
             {formatCOP(p.price_cents)}
           </span>
 
