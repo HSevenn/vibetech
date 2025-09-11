@@ -9,31 +9,34 @@ export type Product = {
   price_cents: number;
   old_price_cents: number | null;
   stock: number | null;
-  images: string[] | null;
+  // 👇 aceptar tanto string[] como string por compatibilidad de datos
+  images: string[] | string | null;
   tags: string[] | null;
   is_active: boolean;
   created_at: string | null;
-  // derivada para el front
   imageUrl?: string | null;
 };
 
-// URL pública para un path de Storage.
-// - Si ya es http(s), la devolvemos tal cual.
-// - Si es relativo (ej: "products/foto.jpg"), lo convertimos a URL pública.
+// Si ya es http(s), se deja igual; si es path relativo, se convierte a URL pública
 export function publicUrl(path?: string | null): string | null {
   if (!path) return null;
   const trimmed = String(path).trim();
-  if (/^https?:\/\//i.test(trimmed)) return trimmed; // ya es absoluta
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  // Asegura que no haya "/" duplicadas
   const clean = trimmed.replace(/^\/+/, '');
   return `${base}/storage/v1/object/public/${clean}`;
 }
 
-// Toma el primer elemento del array `images` y lo convierte a URL pública
-function firstImageUrl(images?: string[] | null): string | null {
-  if (!Array.isArray(images) || images.length === 0) return null;
-  return publicUrl(images[0]);
+// ✅ Normaliza el campo images: string|string[]|null -> string[] (o [])
+function normalizeImages(images: string[] | string | null | undefined): string[] {
+  if (!images) return [];
+  if (Array.isArray(images)) return images.filter(Boolean).map(String);
+  return [String(images)].filter(Boolean);
+}
+
+function firstImageUrl(images: string[] | string | null | undefined): string | null {
+  const arr = normalizeImages(images);
+  return arr.length ? publicUrl(arr[0]) : null;
 }
 
 /** Últimos productos (para Home) */
@@ -58,7 +61,7 @@ export async function fetchLatestProducts(limit = 12): Promise<Product[]> {
   })) as Product[];
 }
 
-/** Productos destacados para el slider (usa la vista `featured_products`) */
+/** Productos destacados (vista/tabla featured_products) */
 export async function fetchFeaturedProducts(limit = 6): Promise<Product[]> {
   const { data, error } = await supabase
     .from('featured_products')
@@ -133,4 +136,3 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
     imageUrl: firstImageUrl((data as any).images),
   } as Product;
 }
-
