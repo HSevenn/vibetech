@@ -19,7 +19,7 @@ export default function ProductCard({ p }: { p: Product }) {
       href={`/productos/${p.slug}`}
       className="card block overflow-hidden transition-shadow hover:shadow-lg"
     >
-      {/* Imagen con hover-zoom y borde redondeado */}
+      {/* Imagen */}
       <div className="relative m-3 overflow-hidden rounded-xl">
         <div className="relative aspect-[4/3]">
           <Image
@@ -39,9 +39,12 @@ export default function ProductCard({ p }: { p: Product }) {
           {p.description ?? ''}
         </p>
 
-        {/* Precio actual + precio tachado + badge de descuento TODO junto */}
+        {/* Precio actual + precio tachado + badge */}
         <div className="mt-3 flex items-center gap-2">
-          <span className="text-lg font-semibold">{formatCOP(p.price_cents)}</span>
+          {/* Precio actual más grande y ancho */}
+          <span className="text-2xl font-bold tracking-tight">
+            {formatCOP(p.price_cents)}
+          </span>
 
           {p.old_price_cents && p.old_price_cents > p.price_cents && (
             <>
