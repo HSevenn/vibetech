@@ -25,7 +25,7 @@ export default function ShareButtons({ url, productName, waMessage }: Props) {
   )}`;
 
   // 👇 WhatsApp: CTA para comprar directo
-  const waBuyHref = `https://wa.me/573014564861?text=${encodeURIComponent(
+  const waBuyHref = `https://wa.me/573132774058?text=${encodeURIComponent(
     waMessage
   )}`;
 
