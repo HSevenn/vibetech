@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Script from 'next/script';
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || 'https://www.vibetechvibe.com';
@@ -12,7 +13,6 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   manifest: '/manifest.json',
 
-  // Canonical de la HOME (las demás páginas lo ponen en su generateMetadata)
   alternates: {
     canonical: 'https://www.vibetechvibe.com/',
   },
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     siteName: 'VibeTech',
     locale: 'es_CO',
     type: 'website',
-    url: 'https://www.vibetechvibe.com/', // og:url explícito (HOME)
+    url: 'https://www.vibetechvibe.com/',
     images: [
       {
         url: 'https://www.vibetechvibe.com/og-default.jpg',
@@ -48,14 +48,26 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: '/vibetech_icon_180.png?v=2' }],
   },
-
-  // (Opcional) Si creas una app en Facebook:
-  // other: { 'fb:app_id': 'TU_APP_ID' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
+      <head>
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-0NGF64134T"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-0NGF64134T');
+          `}
+        </Script>
+      </head>
       <body>
         <Navbar />
         <main className="container-max py-8 px-4">{children}</main>
