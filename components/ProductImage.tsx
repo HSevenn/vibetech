@@ -1,31 +1,45 @@
 // components/ProductImage.tsx
 type Props = {
-  src: string;
+  src?: string | null;
   alt: string;
 };
 
-// Convierte cualquier ruta a URL absoluta válida
-function toAbsolute(src?: string | null): string {
-  if (!src) return '/og-default.jpg'; // fallback
-  const trimmed = String(src).trim();
+/** Normaliza la URL:
+ * - si viene null/'' usa un placeholder
+ * - encodeURI para espacios y caracteres raros
+ */
+function normalizeSrc(src?: string | null) {
+  const FALLBACK = '/og-default.jpg';
+  if (!src) return FALLBACK;
 
-  // si ya es absoluta (http/https), la usamos directo
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-
-  // si es relativa, la convertimos a pública en Supabase
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const clean = trimmed.replace(/^\/+/, ''); // quita / iniciales
-  return `${base}/storage/v1/object/public/${clean}`;
+  // si ya es absoluta o relativa, solo saneamos
+  try {
+    // encode espacios, paréntesis, etc.
+    const encoded = encodeURI(src);
+    // si encoded ya forma una URL válida, devuélvela
+    // (esto no rompe paths relativos)
+    return encoded;
+  } catch {
+    return FALLBACK;
+  }
 }
 
 export default function ProductImage({ src, alt }: Props) {
+  const finalSrc = normalizeSrc(src);
+
   return (
     <div className="w-full aspect-square rounded-lg overflow-hidden border bg-neutral-100 dark:bg-neutral-900">
       <img
-        src={toAbsolute(src)}
+        src={finalSrc}
         alt={alt}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain"
         loading="eager"
+        // Si falla la carga, muestra el placeholder
+        onError={(e) => {
+          const img = e.currentTarget as HTMLImageElement;
+          if (img.src.endsWith('/og-default.jpg')) return;
+          img.src = '/og-default.jpg';
+        }}
       />
     </div>
   );
