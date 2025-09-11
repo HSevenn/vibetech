@@ -41,8 +41,8 @@ export default function ProductCard({ p }: { p: Product }) {
 
         {/* Precio actual + precio tachado + badge */}
         <div className="mt-3 flex items-center gap-2">
-          {/* Precio actual más grande y ancho */}
-          <span className="text-2xl font-bold tracking-tight">
+          {/* Precio principal más pequeño que detalle, pero más fuerte que antes */}
+          <span className="text-xl font-bold tracking-tight">
             {formatCOP(p.price_cents)}
           </span>
 
