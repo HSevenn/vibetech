@@ -1,4 +1,3 @@
-// components/ProductCard.tsx
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Product } from '@/lib/products';
@@ -18,15 +17,17 @@ export default function ProductCard({ p }: { p: Product }) {
     <Link
       href={`/productos/${p.slug}`}
       className="
-        group block rounded-2xl border border-neutral-200 bg-white shadow-sm
+        group block select-none
+        rounded-2xl border border-neutral-200 bg-white shadow-sm
         transition-all duration-300
-        hover:shadow-xl hover:border-neutral-300
-        dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300
-        select-none cursor-pointer
+        hover:-translate-y-[2px] hover:shadow-xl hover:border-neutral-300
+        dark:border-neutral-800 dark:bg-neutral-900
+        dark:hover:border-neutral-700
+        focus-visible:outline-none focus-visible:ring-2
+        focus-visible:ring-neutral-300 dark:focus-visible:ring-neutral-700
       "
     >
-      {/* Imagen con zoom sutil al hover */}
+      {/* Marco de imagen con zoom suave */}
       <div className="relative m-3 overflow-hidden rounded-xl">
         <div className="relative aspect-[4/3]">
           <Image
@@ -34,26 +35,35 @@ export default function ProductCard({ p }: { p: Product }) {
             alt={p.name}
             fill
             sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 33vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-            priority={false}
+            className="
+              object-cover
+              transition-transform duration-300
+              group-hover:scale-[1.04]
+            "
+          />
+          {/* Sutil overlay al hover para enfatizar el borde */}
+          <div
+            className="
+              pointer-events-none absolute inset-0 rounded-xl
+              ring-1 ring-transparent transition
+              group-hover:ring-neutral-300/70 dark:group-hover:ring-neutral-700/70
+            "
           />
         </div>
       </div>
 
       <div className="p-4">
-        {/* Título: no seleccionable y subrayado al hover */}
-        <h3 className="text-base font-semibold leading-snug line-clamp-2 group-hover:underline">
+        <h3 className="text-base font-semibold leading-snug line-clamp-2 group-hover:underline pointer-events-none">
           {p.name}
         </h3>
 
-        {/* Extracto / descripción corta */}
         <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
           {p.description ?? ''}
         </p>
 
-        {/* Precio + tachado + badge JUNTOS (como la portada) */}
+        {/* Precio + tachado + badge juntos */}
         <div className="mt-3 flex items-center gap-2">
-          <span className="text-[1.25rem] leading-none font-bold tracking-tight">
+          <span className="text-[1.15rem] leading-none font-bold tracking-tight">
             {formatCOP(p.price_cents)}
           </span>
 
@@ -63,10 +73,7 @@ export default function ProductCard({ p }: { p: Product }) {
                 {formatCOP(p.old_price_cents)}
               </span>
               {off !== null && (
-                <span
-                  className="text-xs font-semibold px-2 py-0.5 rounded
-                             bg-green-900/30 text-green-500"
-                >
+                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-green-900/30 text-green-500">
                   {off}% OFF
                 </span>
               )}
