@@ -2,9 +2,13 @@
 const nextConfig = {
   experimental: { appDir: true },
   images: {
-    // Usamos next/image optimizado y permitimos Supabase
+    unoptimized: true,
     remotePatterns: [
-      { protocol: 'https', hostname: '*.supabase.co' }, // cubre cualquier subdominio de supabase.co
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
     ],
   },
 };
