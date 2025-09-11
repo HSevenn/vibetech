@@ -8,27 +8,28 @@ export const dynamic = 'force-dynamic';
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams?: { order?: string };
+  searchParams?: { order?: 'price_asc' | 'price_desc' | 'newest' | string };
 }) {
-  // leer el parámetro ?order=price_asc / price_desc / newest
-  const orderParam = searchParams?.order as
-    | 'price_asc'
-    | 'price_desc'
-    | 'newest'
-    | undefined;
+  const order =
+    (searchParams?.order as 'price_asc' | 'price_desc' | 'newest') || 'newest';
 
-  const products = await fetchProductsByOrder(orderParam || 'newest');
+  let products: Awaited<ReturnType<typeof fetchProductsByOrder>> = [];
+  try {
+    products = await fetchProductsByOrder(order);
+  } catch (err) {
+    console.error('⚠️ fetchProductsByOrder failed:', err);
+    products = [];
+  }
 
   return (
     <main className="container mx-auto px-4 py-10">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Productos</h1>
 
-        {/* selector de orden */}
         <form>
           <select
             name="order"
-            defaultValue={orderParam || 'newest'}
+            defaultValue={order}
             className="select"
             onChange={(e) => e.currentTarget.form?.submit()}
           >
@@ -39,44 +40,52 @@ export default async function ProductsPage({
         </form>
       </div>
 
-      {/* grid */}
       <div className="grid-products">
-        {products.map((p) => (
-          <article key={p.id} className="card">
-            {p.imageUrl ? (
-              <img
-                src={p.imageUrl}
-                alt={p.name}
-                className="h-48 w-full object-cover"
-              />
-            ) : (
-              <div className="h-48 w-full bg-neutral-200 dark:bg-neutral-800" />
-            )}
+        {products.map((p) => {
+          const img = p.imageUrl || '/og-default.jpg';
+          const name = p.name || 'Producto';
+          const desc = p.description || '';
 
-            <div className="card-body">
-              <h3 className="text-base font-semibold">{p.name}</h3>
-              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                {p.description}
-              </p>
+          return (
+            <article key={p.id} className="card">
+              {img ? (
+                <img
+                  src={img}
+                  alt={name}
+                  className="h-48 w-full object-cover"
+                />
+              ) : (
+                <div className="h-48 w-full bg-neutral-200 dark:bg-neutral-800" />
+              )}
 
-              <div className="mt-3 flex items-center justify-between">
-                <div className="text-sm">
-                  {p.old_price_cents ? (
-                    <span className="mr-2 text-neutral-400 line-through">
-                      {formatCOP(p.old_price_cents)}
+              <div className="card-body">
+                <h3 className="text-base font-semibold">{name}</h3>
+                <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                  {desc}
+                </p>
+
+                <div className="mt-3 flex items-center justify-between">
+                  <div className="text-sm">
+                    {p.old_price_cents ? (
+                      <span className="mr-2 text-neutral-400 line-through">
+                        {formatCOP(p.old_price_cents)}
+                      </span>
+                    ) : null}
+                    <span className="font-semibold">
+                      {formatCOP(p.price_cents || 0)}
                     </span>
-                  ) : null}
-                  <span className="font-semibold">
-                    {formatCOP(p.price_cents)}
-                  </span>
+                  </div>
+                  <Link
+                    href={`/productos/${p.slug}`}
+                    className="btn btn-primary"
+                  >
+                    Ver producto
+                  </Link>
                 </div>
-                <Link href={`/productos/${p.slug}`} className="btn btn-primary">
-                  Ver producto
-                </Link>
               </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
 
         {products.length === 0 && (
           <p className="text-neutral-500">No hay productos disponibles.</p>
