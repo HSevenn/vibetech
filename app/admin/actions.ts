@@ -1,4 +1,4 @@
-// app/admin/actions.ts
+// /app/admin/actions.ts
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -15,13 +15,12 @@ function slugify(s: string) {
     .replace(/(^-|-$)+/g, '');
 }
 
-// Convierte un valor de FormData en una categoría válida
+// Coerce seguro a Category
 function toCategory(v: FormDataEntryValue | null): Category {
   const s = String(v || '').toLowerCase();
-  if (s === 'tecnologia' || s === 'estilo' || s === 'hogar' || s === 'otros') {
-    return s as Category;
-  }
-  return 'otros';
+  return (s === 'tecnologia' || s === 'estilo' || s === 'hogar' || s === 'otros')
+    ? (s as Category)
+    : 'otros';
 }
 
 export async function createProductAction(fd: FormData) {
@@ -37,13 +36,14 @@ export async function createProductAction(fd: FormData) {
     old_price_cents: fd.get('old_price_cents')
       ? Number(fd.get('old_price_cents'))
       : null,
-    imageUrl: String(fd.get('imageUrl') || ''), 
+    imageUrl: String(fd.get('imageUrl') || ''),
     visible: fd.get('visible') === 'on',
-    category: toCategory(fd.get('category')), // ✅ tipado seguro
+    category: toCategory(fd.get('category')),
   });
 
-  // refresca la lista y vuelve al listado
   revalidatePath('/admin/productos');
+  redirect('/admin/productos');
+}
   redirect('/admin/productos');
 }
 
