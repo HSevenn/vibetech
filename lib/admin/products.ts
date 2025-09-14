@@ -4,11 +4,19 @@
 import { supabaseAdmin as supabase } from '@/lib/supabase-server';
 import type { Category } from '@/lib/products';
 
+// Guard: valida que un string sea Category
+function isCategory(v: any): v is Category {
+  return v === 'tecnologia' || v === 'estilo' || v === 'hogar' || v === 'otros';
+}
+function normalizeCategory(v: any): Category {
+  return isCategory(v) ? v : 'otros';
+}
+
 // ===== Listar =====
 export async function listProducts() {
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, slug, price_cents, old_price_cents, category') // 👈 category
+    .select('id, name, slug, price_cents, old_price_cents, category')
     .order('name', { ascending: true });
 
   if (error) {
@@ -24,7 +32,7 @@ export async function listProducts() {
 export async function getProductById(id: string) {
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, slug, description, price_cents, old_price_cents, images, category') // 👈 category
+    .select('id, name, slug, description, price_cents, old_price_cents, images, category')
     .eq('id', id)
     .maybeSingle();
 
@@ -50,8 +58,8 @@ export async function createProduct(input: {
   price_cents: number;
   old_price_cents?: number | null;
   imageUrl?: string | null; // primera imagen
-  visible?: boolean;
-  category: Category;        // 👈 nuevo
+  visible?: boolean;        // (campo de UI, no guardamos visible en DB)
+  category: Category;
 }) {
   const payload: any = {
     name: input.name,
@@ -60,7 +68,7 @@ export async function createProduct(input: {
     price_cents: input.price_cents,
     old_price_cents: input.old_price_cents ?? null,
     images: input.imageUrl ? [input.imageUrl] : [],
-    category: input.category, // 👈
+    category: normalizeCategory(input.category), // <- asegura Category válido
   };
 
   const { error } = await supabase.from('products').insert([payload]);
@@ -81,9 +89,9 @@ export async function updateProduct(
     price_cents: number;
     old_price_cents?: number | null;
     imageUrl?: string | null;
-    visible?: boolean;
-    images?: string[];       // si estás usando múltiples
-    category: Category;      // 👈 nuevo
+    visible?: boolean;   // (solo UI)
+    images?: string[];   // si usas múltiples
+    category: Category;
   }
 ) {
   const payload: any = {
@@ -93,7 +101,7 @@ export async function updateProduct(
     price_cents: input.price_cents,
     old_price_cents: input.old_price_cents ?? null,
     images: input.images ?? (input.imageUrl ? [input.imageUrl] : []),
-    category: input.category, // 👈
+    category: normalizeCategory(input.category),
   };
 
   const { error } = await supabase.from('products').update(payload).eq('id', id);
