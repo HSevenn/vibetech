@@ -1,4 +1,6 @@
 // app/admin/productos/[id]/page.tsx
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { getProductById, updateProduct } from '@/lib/admin/products';
 import type { Category } from '@/lib/products';
 
@@ -9,17 +11,29 @@ const CATS: { key: Category; label: string }[] = [
   { key: 'otros', label: 'Otros' },
 ];
 
+// Coerce seguro a Category
+function toCategory(v: FormDataEntryValue | null): Category {
+  const s = String(v || '').toLowerCase();
+  return (s === 'tecnologia' || s === 'estilo' || s === 'hogar' || s === 'otros')
+    ? (s as Category)
+    : 'otros';
+}
+
+// Parse de imágenes (acepta JSON array o líneas/comas)
+function parseImages(raw: string): string[] {
+  if (!raw) return [];
+  try {
+    const j = JSON.parse(raw);
+    if (Array.isArray(j)) return j.map(String).map(s => s.trim()).filter(Boolean);
+  } catch {}
+  return raw.split(/\r?\n|,/).map(s => s.trim()).filter(Boolean);
+}
+
 export default async function EditProductPage({ params }: { params: { id: string } }) {
   const p = await getProductById(params.id);
 
   async function onSave(formData: FormData) {
     'use server';
-
-    const parseImages = (raw: string): string[] =>
-      raw
-        .split(/\r?\n|,/)
-        .map(s => s.trim())
-        .filter(Boolean);
 
     await updateProduct(params.id, {
       name: String(formData.get('name') || ''),
@@ -30,13 +44,19 @@ export default async function EditProductPage({ params }: { params: { id: string
         ? Number(formData.get('old_price_cents'))
         : null,
       images: parseImages(String(formData.get('images') || '')),
-      category: (String(formData.get('category') || p?.category || 'tecnologia') as Category),
+      category: toCategory(formData.get('category') ?? p?.category ?? 'tecnologia'),
     });
+
+    // refresca listados y vuelve a /admin/productos
+    revalidatePath('/productos');
+    revalidatePath('/admin/productos');
+    redirect('/admin/productos');
   }
 
-  const imagesText = Array.isArray(p.images) && p.images.length
-    ? p.images.join('\n')
-    : (p.imageUrl ?? '');
+  const imagesText =
+    Array.isArray(p.images) && p.images.length
+      ? p.images.join('\n')
+      : (p.imageUrl ?? '');
 
   return (
     <div className="space-y-4">
@@ -55,17 +75,32 @@ export default async function EditProductPage({ params }: { params: { id: string
 
         <div>
           <label className="block text-sm font-medium mb-1">Descripción</label>
-          <textarea name="description" defaultValue={p?.description ?? ''} className="textarea w-full" rows={4}/>
+          <textarea
+            name="description"
+            defaultValue={p?.description ?? ''}
+            className="textarea w-full"
+            rows={4}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Precio (centavos)</label>
-            <input type="number" name="price_cents" defaultValue={p?.price_cents ?? 0} className="input w-full" />
+            <input
+              type="number"
+              name="price_cents"
+              defaultValue={p?.price_cents ?? 0}
+              className="input w-full"
+            />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Precio anterior (centavos)</label>
-            <input type="number" name="old_price_cents" defaultValue={p?.old_price_cents ?? ''} className="input w-full" />
+            <input
+              type="number"
+              name="old_price_cents"
+              defaultValue={p?.old_price_cents ?? ''}
+              className="input w-full"
+            />
           </div>
         </div>
 
@@ -80,7 +115,7 @@ export default async function EditProductPage({ params }: { params: { id: string
             placeholder={`https://.../foto1.jpg\nproducts/foto2.jpg`}
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            Pega URLs públicas de Supabase o rutas relativas (<code>products/archivo.jpg</code>).
+            Pega URLs públicas o rutas relativas (<code>products/archivo.jpg</code>). También acepta JSON array.
           </p>
         </div>
 
@@ -88,7 +123,7 @@ export default async function EditProductPage({ params }: { params: { id: string
         <div>
           <label className="block text-sm font-medium mb-1">Categoría</label>
           <select name="category" defaultValue={p?.category ?? 'tecnologia'} className="select">
-            {CATS.map((c) => (
+            {CATS.map(c => (
               <option key={c.key} value={c.key}>{c.label}</option>
             ))}
           </select>
