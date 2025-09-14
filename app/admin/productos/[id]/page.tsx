@@ -1,5 +1,13 @@
 // app/admin/productos/[id]/page.tsx
 import { getProductById, updateProduct } from '@/lib/admin/products';
+import type { Category } from '@/lib/products';
+
+const CATS: { key: Category; label: string }[] = [
+  { key: 'tecnologia', label: 'Tecnología' },
+  { key: 'estilo', label: 'Estilo' },
+  { key: 'hogar', label: 'Hogar' },
+  { key: 'otros', label: 'Otros' },
+];
 
 export default async function EditProductPage({ params }: { params: { id: string } }) {
   const p = await getProductById(params.id);
@@ -22,7 +30,7 @@ export default async function EditProductPage({ params }: { params: { id: string
         ? Number(formData.get('old_price_cents'))
         : null,
       images: parseImages(String(formData.get('images') || '')),
-      visible: formData.get('visible') === 'on',
+      category: (String(formData.get('category') || p?.category || 'tecnologia') as Category),
     });
   }
 
@@ -61,7 +69,7 @@ export default async function EditProductPage({ params }: { params: { id: string
           </div>
         </div>
 
-        {/* 👇 nuevo: varias imágenes (una por línea) */}
+        {/* Varias imágenes */}
         <div>
           <label className="block text-sm font-medium mb-1">Imágenes (una URL por línea)</label>
           <textarea
@@ -69,16 +77,21 @@ export default async function EditProductPage({ params }: { params: { id: string
             defaultValue={imagesText}
             className="textarea w-full"
             rows={4}
-            placeholder={`https://.../foto1.jpg\n/products/foto2.jpg`}
+            placeholder={`https://.../foto1.jpg\nproducts/foto2.jpg`}
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            Pega URLs públicas de Supabase Storage o rutas relativas como <code>products/mi-foto.jpg</code>.
+            Pega URLs públicas de Supabase o rutas relativas (<code>products/archivo.jpg</code>).
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <input type="checkbox" name="visible" defaultChecked={p?.visible ?? true} />
-          <span className="text-sm">Visible</span>
+        {/* Categoría */}
+        <div>
+          <label className="block text-sm font-medium mb-1">Categoría</label>
+          <select name="category" defaultValue={p?.category ?? 'tecnologia'} className="select">
+            {CATS.map((c) => (
+              <option key={c.key} value={c.key}>{c.label}</option>
+            ))}
+          </select>
         </div>
 
         <button type="submit" className="btn btn-primary">Guardar</button>

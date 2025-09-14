@@ -1,6 +1,8 @@
 // lib/products.ts
 import { supabase } from './supabase';
 
+export type Category = 'tecnologia' | 'estilo' | 'hogar' | 'otros';
+
 export type Product = {
   id: string;
   slug: string;
@@ -9,15 +11,15 @@ export type Product = {
   price_cents: number;
   old_price_cents: number | null;
   stock: number | null;
-  // 👇 aceptar tanto string[] como string por compatibilidad de datos
-  images: string[] | string | null;
+  images: string[] | null;
   tags: string[] | null;
   is_active: boolean;
   created_at: string | null;
-  imageUrl?: string | null;
+  category?: Category; // 👈 nuevo (view featured_products quizá no la tenga)
+  imageUrl?: string | null; // derivada
 };
 
-// Si ya es http(s), se deja igual; si es path relativo, se convierte a URL pública
+// URL pública para un path de Storage.
 export function publicUrl(path?: string | null): string | null {
   if (!path) return null;
   const trimmed = String(path).trim();
@@ -27,16 +29,9 @@ export function publicUrl(path?: string | null): string | null {
   return `${base}/storage/v1/object/public/${clean}`;
 }
 
-// ✅ Normaliza el campo images: string|string[]|null -> string[] (o [])
-function normalizeImages(images: string[] | string | null | undefined): string[] {
-  if (!images) return [];
-  if (Array.isArray(images)) return images.filter(Boolean).map(String);
-  return [String(images)].filter(Boolean);
-}
-
-function firstImageUrl(images: string[] | string | null | undefined): string | null {
-  const arr = normalizeImages(images);
-  return arr.length ? publicUrl(arr[0]) : null;
+function firstImageUrl(images?: string[] | null): string | null {
+  if (!Array.isArray(images) || images.length === 0) return null;
+  return publicUrl(images[0]);
 }
 
 /** Últimos productos (para Home) */
@@ -44,7 +39,7 @@ export async function fetchLatestProducts(limit = 12): Promise<Product[]> {
   const { data, error } = await supabase
     .from('products')
     .select(
-      'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at'
+      'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at, category'
     )
     .eq('is_active', true)
     .order('created_at', { ascending: false })
@@ -61,11 +56,12 @@ export async function fetchLatestProducts(limit = 12): Promise<Product[]> {
   })) as Product[];
 }
 
-/** Productos destacados (vista/tabla featured_products) */
+/** Productos destacados para el slider (vista `featured_products`) */
 export async function fetchFeaturedProducts(limit = 6): Promise<Product[]> {
   const { data, error } = await supabase
     .from('featured_products')
     .select(
+      // OJO: esta vista puede no tener category
       'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at, featured_order'
     )
     .order('featured_order', { ascending: true, nullsFirst: false })
@@ -83,16 +79,21 @@ export async function fetchFeaturedProducts(limit = 6): Promise<Product[]> {
   })) as Product[];
 }
 
-/** Listado con orden (para /productos) */
+/** Listado con orden + categoría (para /productos) */
 export async function fetchProductsByOrder(
-  order: 'newest' | 'price_asc' | 'price_desc' = 'newest'
+  order: 'newest' | 'price_asc' | 'price_desc' = 'newest',
+  category?: Category
 ): Promise<Product[]> {
   let query = supabase
     .from('products')
     .select(
-      'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at'
+      'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at, category'
     )
     .eq('is_active', true);
+
+  if (category) {
+    query = query.eq('category', category);
+  }
 
   if (order === 'price_asc') {
     query = query.order('price_cents', { ascending: true, nullsFirst: false });
@@ -119,7 +120,7 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
   const { data, error } = await supabase
     .from('products')
     .select(
-      'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at, stock, tags'
+      'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at, stock, tags, category'
     )
     .eq('slug', slug)
     .limit(1)

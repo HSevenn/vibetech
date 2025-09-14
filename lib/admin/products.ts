@@ -1,12 +1,14 @@
+// lib/admin/products.ts
 'use server';
 
 import { supabaseAdmin as supabase } from '@/lib/supabase-server';
+import type { Category } from '@/lib/products';
 
 // ===== Listar =====
 export async function listProducts() {
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, slug, price_cents, old_price_cents')
+    .select('id, name, slug, price_cents, old_price_cents, category') // 👈 category
     .order('name', { ascending: true });
 
   if (error) {
@@ -14,7 +16,7 @@ export async function listProducts() {
     return [];
   }
 
-  // añadimos visible=true por compatibilidad con la UI
+  // visible=true solo para la UI previa
   return (data ?? []).map((p) => ({ ...p, visible: true }));
 }
 
@@ -22,7 +24,7 @@ export async function listProducts() {
 export async function getProductById(id: string) {
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, slug, description, price_cents, old_price_cents, images')
+    .select('id, name, slug, description, price_cents, old_price_cents, images, category') // 👈 category
     .eq('id', id)
     .maybeSingle();
 
@@ -32,61 +34,37 @@ export async function getProductById(id: string) {
   }
   if (!data) throw new Error('Producto no encontrado');
 
-  const imgs = Array.isArray((data as any).images) ? (data as any).images : [];
-  const imageUrl = imgs.length ? imgs[0] : null;
+  const imageUrl =
+    Array.isArray((data as any).images) && (data as any).images.length
+      ? (data as any).images[0]
+      : null;
 
-  // visible solo para la UI del admin
-  return { ...data, images: imgs, imageUrl, visible: true };
-}
-
-// ========= Tipos de entrada (con images) =========
-type CreateProductInput = {
-  name: string;
-  slug: string;
-  description?: string | null;
-  price_cents: number;
-  old_price_cents?: number | null;
-  imageUrl?: string | null;   // compat
-  images?: string[] | null;   // 👈 NUEVO
-  visible?: boolean;          // si algún día agregas la columna
-};
-
-type UpdateProductInput = {
-  name: string;
-  slug: string;
-  description?: string | null;
-  price_cents: number;
-  old_price_cents?: number | null;
-  imageUrl?: string | null;   // compat
-  images?: string[] | null;   // 👈 NUEVO
-  visible?: boolean;
-};
-
-function normStr(v?: string | null) {
-  const s = (v ?? '').trim();
-  return s.length ? s : null;
-}
-
-function buildImagesArray(images?: string[] | null, imageUrl?: string | null) {
-  const arr = (images ?? []).map((s) => s?.trim()).filter(Boolean) as string[];
-  if (!arr.length && imageUrl && imageUrl.trim()) arr.push(imageUrl.trim());
-  return arr;
+  return { ...data, imageUrl, visible: true };
 }
 
 // ===== Crear =====
-export async function createProduct(input: CreateProductInput) {
+export async function createProduct(input: {
+  name: string;
+  slug: string;
+  description?: string;
+  price_cents: number;
+  old_price_cents?: number | null;
+  imageUrl?: string | null; // primera imagen
+  visible?: boolean;
+  category: Category;        // 👈 nuevo
+}) {
   const payload: any = {
     name: input.name,
     slug: input.slug,
-    description: normStr(input.description),
+    description: input.description ?? null,
     price_cents: input.price_cents,
     old_price_cents: input.old_price_cents ?? null,
-    images: buildImagesArray(input.images, input.imageUrl), // 👈 guarda múltiples
-    // is_active / visible si lo manejas en DB:
-    // is_active: input.visible ?? true,
+    images: input.imageUrl ? [input.imageUrl] : [],
+    category: input.category, // 👈
   };
 
   const { error } = await supabase.from('products').insert([payload]);
+
   if (error) {
     console.error('createProduct error:', error);
     throw error;
@@ -94,15 +72,28 @@ export async function createProduct(input: CreateProductInput) {
 }
 
 // ===== Actualizar =====
-export async function updateProduct(id: string, input: UpdateProductInput) {
+export async function updateProduct(
+  id: string,
+  input: {
+    name: string;
+    slug: string;
+    description?: string;
+    price_cents: number;
+    old_price_cents?: number | null;
+    imageUrl?: string | null;
+    visible?: boolean;
+    images?: string[];       // si estás usando múltiples
+    category: Category;      // 👈 nuevo
+  }
+) {
   const payload: any = {
     name: input.name,
     slug: input.slug,
-    description: normStr(input.description),
+    description: input.description ?? null,
     price_cents: input.price_cents,
     old_price_cents: input.old_price_cents ?? null,
-    images: buildImagesArray(input.images, input.imageUrl), // 👈 guarda múltiples
-    // is_active: input.visible ?? true,
+    images: input.images ?? (input.imageUrl ? [input.imageUrl] : []),
+    category: input.category, // 👈
   };
 
   const { error } = await supabase.from('products').update(payload).eq('id', id);
@@ -115,7 +106,6 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
 // ===== Borrar =====
 export async function deleteProduct(id: string) {
   await supabase.from('featured_products').delete().eq('product_id', id);
-
   const { error } = await supabase.from('products').delete().eq('id', id);
   if (error) {
     console.error('deleteProduct products error:', error);
