@@ -1,81 +1,95 @@
-// app/admin/productos/nuevo/page.tsx
-import { createProduct } from '@/lib/admin/products';
-import type { Category } from '@/lib/products';
+// /app/admin/productos/nuevo/page.tsx
 
-const CATS: { key: Category; label: string }[] = [
-  { key: 'tecnologia', label: 'Tecnología' },
-  { key: 'estilo', label: 'Estilo' },
-  { key: 'hogar', label: 'Hogar' },
-  { key: 'otros', label: 'Otros' },
-];
+'use client';
 
-export default function NewProductPage() {
-  async function onCreate(formData: FormData) {
-    'use server';
+import { createProductAction } from '@/app/admin/actions';
 
-    await createProduct({
-      name: String(formData.get('name') || ''),
-      slug: String(formData.get('slug') || ''),
-      description: String(formData.get('description') || ''),
-      price_cents: Number(formData.get('price_cents') || 0),
-      old_price_cents: formData.get('old_price_cents')
-        ? Number(formData.get('old_price_cents'))
-        : null,
-      imageUrl: String(formData.get('imageUrl') || ''),
-      category: (String(formData.get('category') || 'tecnologia') as Category),
-    });
-  }
-
+export default function NuevoProductoPage() {
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Nuevo producto</h1>
+    <div className="p-6 max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Crear nuevo producto</h1>
 
-      <form action={onCreate} className="space-y-4">
+      <form action={createProductAction} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Nombre</label>
-          <input type="text" name="name" className="input" />
+          <label className="block text-sm font-medium">Nombre</label>
+          <input
+            type="text"
+            name="name"
+            required
+            className="w-full border p-2 rounded"
+          />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Slug</label>
-          <input type="text" name="slug" className="input" />
+          <label className="block text-sm font-medium">Slug (opcional)</label>
+          <input
+            type="text"
+            name="slug"
+            className="w-full border p-2 rounded"
+          />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Descripción</label>
-          <textarea name="description" className="textarea" rows={4} />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Precio (centavos)</label>
-            <input type="number" name="price_cents" className="input" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Precio anterior (centavos)</label>
-            <input type="number" name="old_price_cents" className="input" />
-          </div>
+          <label className="block text-sm font-medium">Descripción</label>
+          <textarea
+            name="description"
+            className="w-full border p-2 rounded"
+          />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Imagen principal (URL pública)</label>
-          <input type="text" name="imageUrl" className="input" />
+          <label className="block text-sm font-medium">Precio (centavos)</label>
+          <input
+            type="number"
+            name="price_cents"
+            className="w-full border p-2 rounded"
+          />
         </div>
 
-        {/* Categoría */}
         <div>
-          <label className="block text-sm font-medium mb-1">Categoría</label>
-          <select name="category" className="select">
-            {CATS.map((c) => (
-              <option key={c.key} value={c.key}>{c.label}</option>
-            ))}
+          <label className="block text-sm font-medium">Precio anterior (centavos, opcional)</label>
+          <input
+            type="number"
+            name="old_price_cents"
+            className="w-full border p-2 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium">URL de Imagen</label>
+          <input
+            type="text"
+            name="imageUrl"
+            className="w-full border p-2 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium">Visible</label>
+          <input type="checkbox" name="visible" />
+        </div>
+
+        {/* 👇 Nuevo campo de Categoría */}
+        <div>
+          <label className="block text-sm font-medium">Categoría</label>
+          <select
+            name="category"
+            defaultValue="tecnologia"
+            className="w-full border p-2 rounded"
+          >
+            <option value="tecnologia">Tecnología</option>
+            <option value="estilo">Estilo</option>
+            <option value="hogar">Hogar</option>
+            <option value="otros">Otros</option>
           </select>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Podrás editarla luego desde “Editar producto”.
-          </p>
         </div>
 
-        <button type="submit" className="btn btn-primary">Crear</button>
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Crear producto
+        </button>
       </form>
     </div>
   );
