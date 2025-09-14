@@ -1,9 +1,10 @@
+// /app/admin/actions.ts
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createProduct } from '@/lib/admin/products';
-import type { Category } from '@/lib/products';
 
 // Pequeño helper por si no tecleas el slug
 function slugify(s: string) {
@@ -19,13 +20,6 @@ export async function createProductAction(fd: FormData) {
   const slugInput = String(fd.get('slug') || '');
   const slug = slugInput ? slugify(slugInput) : slugify(name);
 
-  // 🔥 Categoría (desde el <select name="category">)
-  const raw = String(fd.get('category') || '').trim();
-  const allowed: Category[] = ['tecnologia', 'estilo', 'hogar', 'otros'];
-  const category: Category = allowed.includes(raw as Category)
-    ? (raw as Category)
-    : 'otros';
-
   await createProduct({
     name,
     slug,
@@ -36,7 +30,7 @@ export async function createProductAction(fd: FormData) {
       : null,
     imageUrl: String(fd.get('imageUrl') || ''),
     visible: fd.get('visible') === 'on',
-    category, // ✅ ahora se envía y desaparece el error de TS
+    category: String(fd.get('category') || 'otros'), // 👈 aquí agregamos categoría
   });
 
   // refresca la lista y vuelve al listado
