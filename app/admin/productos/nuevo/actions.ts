@@ -2,6 +2,7 @@
 'use server';
 
 import { createProduct } from '@/lib/admin/products';
+import type { Category } from '@/lib/products';
 
 function parseImages(raw: string): string[] {
   if (!raw) return [];
@@ -10,6 +11,14 @@ function parseImages(raw: string): string[] {
     if (Array.isArray(j)) return j.map(String).map(s => s.trim()).filter(Boolean);
   } catch {}
   return raw.split(/\r?\n|,/).map(s => s.trim()).filter(Boolean);
+}
+
+// Coerce seguro a Category
+function toCategory(v: FormDataEntryValue | null): Category {
+  const s = String(v || '').toLowerCase();
+  return (s === 'tecnologia' || s === 'estilo' || s === 'hogar' || s === 'otros')
+    ? (s as Category)
+    : 'otros';
 }
 
 export async function createProductAction(fd: FormData) {
@@ -21,5 +30,6 @@ export async function createProductAction(fd: FormData) {
     old_price_cents: fd.get('old_price_cents') ? Number(fd.get('old_price_cents')) : null,
     images: parseImages(String(fd.get('images') || '')),
     visible: fd.get('visible') === 'on',
+    category: toCategory(fd.get('category')),
   });
 }
