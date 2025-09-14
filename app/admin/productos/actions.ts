@@ -1,60 +1,44 @@
 // app/admin/productos/actions.ts
 'use server';
 
-import { createProduct } from '@/lib/admin/products';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { createProduct } from '@/lib/admin/products';
+import type { Category } from '@/lib/products';
 
-/** Slug simple a partir del nombre (sin dependencias). */
-function slugify(input: string) {
-  return input
-    .normalize('NFD')                 // separa acentos
-    .replace(/[\u0300-\u036f]/g, '') // quita acentos
+// Slug helper
+function slugify(s: string) {
+  return s
     .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')     // todo lo que no sea [a-z0-9] -> '-'
-    .replace(/(^-|-$)+/g, '');       // bordes
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
 }
 
-/** Normaliza una URL de imagen (acepta absoluta o relativa). */
-function normalizeImageUrl(raw: string | null | undefined) {
-  const v = (raw || '').trim();
-  if (!v) return '';
-  // Permitimos tanto absoluta (https://...) como relativa (/algo o products/...)
-  if (v.startsWith('http://') || v.startsWith('https://') || v.startsWith('/')) return v;
-  return `/${v}`;
+// Coerce seguro a Category
+function toCategory(v: FormDataEntryValue | null): Category {
+  const s = String(v || '').toLowerCase();
+  return (s === 'tecnologia' || s === 'estilo' || s === 'hogar' || s === 'otros')
+    ? (s as Category)
+    : 'otros';
 }
 
-export async function createProductAction(formData: FormData) {
-  // Recoger campos
-  const name = String(formData.get('name') ?? '').trim();
-  let slug = String(formData.get('slug') ?? '').trim();
-  const description = String(formData.get('description') ?? '');
-  const price_cents = Number(formData.get('price_cents') ?? 0);
-  const old_price_cents_raw = formData.get('old_price_cents');
-  const old_price_cents =
-    old_price_cents_raw === null || old_price_cents_raw === ''
-      ? null
-      : Number(old_price_cents_raw);
-  const imageUrl = normalizeImageUrl(String(formData.get('imageUrl') ?? ''));
-  const visible = formData.get('visible') === 'on';
-
-  if (!name) {
-    throw new Error('El nombre es obligatorio');
-  }
+export async function createProductAction(fd: FormData) {
+  const name = String(fd.get('name') || '');
+  let slug = String(fd.get('slug') || '');
   if (!slug) slug = slugify(name);
 
   await createProduct({
     name,
     slug,
-    description,
-    price_cents,
-    old_price_cents,
-    imageUrl,
-    visible, // si tu tabla no tiene `visible`, el lib lo ignora sin romper
+    description: String(fd.get('description') || ''),
+    price_cents: Number(fd.get('price_cents') || 0),
+    old_price_cents: fd.get('old_price_cents') ? Number(fd.get('old_price_cents')) : null,
+    imageUrl: String(fd.get('imageUrl') || ''), // si en el futuro usas images[], cambia acá
+    visible: fd.get('visible') === 'on',
+    category: toCategory(fd.get('category')),   // 👈 clave
   });
 
-  // Refrescar la lista y volver al listado
   revalidatePath('/admin/productos');
   redirect('/admin/productos');
 }
