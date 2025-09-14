@@ -4,9 +4,9 @@
     "lib": [
       "dom",
       "dom.iterable",
-      "esnext", 
-      "node"
+      "es2020"
     ],
+    "types": ["node"],
     "allowJs": false,
     "skipLibCheck": true,
     "strict": false,
