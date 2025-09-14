@@ -1,18 +1,26 @@
-// /app/admin/actions.ts
-
+// app/admin/actions.ts
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createProduct } from '@/lib/admin/products';
+import type { Category } from '@/lib/products';
 
-// Pequeño helper por si no tecleas el slug
 function slugify(s: string) {
   return s
     .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
+}
+
+// Coerce seguro a Category
+function toCategory(v: FormDataEntryValue | null): Category {
+  const s = String(v || '').toLowerCase();
+  return (s === 'tecnologia' || s === 'estilo' || s === 'hogar' || s === 'otros')
+    ? (s as Category)
+    : 'otros';
 }
 
 export async function createProductAction(fd: FormData) {
@@ -25,15 +33,12 @@ export async function createProductAction(fd: FormData) {
     slug,
     description: String(fd.get('description') || ''),
     price_cents: Number(fd.get('price_cents') || 0),
-    old_price_cents: fd.get('old_price_cents')
-      ? Number(fd.get('old_price_cents'))
-      : null,
-    imageUrl: String(fd.get('imageUrl') || ''),
+    old_price_cents: fd.get('old_price_cents') ? Number(fd.get('old_price_cents')) : null,
+    imageUrl: String(fd.get('imageUrl') || ''), // si usas images[], ajústalo abajo
     visible: fd.get('visible') === 'on',
-    category: String(fd.get('category') || 'otros'), // 👈 aquí agregamos categoría
+    category: toCategory(fd.get('category')),
   });
 
-  // refresca la lista y vuelve al listado
   revalidatePath('/admin/productos');
   redirect('/admin/productos');
 }
