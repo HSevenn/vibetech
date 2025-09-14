@@ -39,10 +39,13 @@ export async function createProductAction(fd: FormData) {
       : null,
     imageUrl: String(fd.get('imageUrl') || ''), 
     visible: fd.get('visible') === 'on',
-    category: toCategory(fd.get('category')), // ✅ ahora seguro tipado como Category
+    category: toCategory(fd.get('category')), // ✅ tipado seguro
   });
 
   // refresca la lista y vuelve al listado
   revalidatePath('/admin/productos');
   redirect('/admin/productos');
 }
+
+// 👇 export centralizado (opcional)
+export * from './productos/nuevo/actions';
