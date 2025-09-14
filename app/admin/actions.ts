@@ -15,7 +15,6 @@ function slugify(s: string) {
     .replace(/(^-|-$)+/g, '');
 }
 
-// Coerce seguro a Category
 function toCategory(v: FormDataEntryValue | null): Category {
   const s = String(v || '').toLowerCase();
   return (s === 'tecnologia' || s === 'estilo' || s === 'hogar' || s === 'otros')
@@ -44,8 +43,3 @@ export async function createProductAction(fd: FormData) {
   revalidatePath('/admin/productos');
   redirect('/admin/productos');
 }
-  redirect('/admin/productos');
-}
-
-// 👇 export centralizado (opcional)
-export * from './productos/nuevo/actions';
