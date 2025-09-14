@@ -15,12 +15,13 @@ function slugify(s: string) {
     .replace(/(^-|-$)+/g, '');
 }
 
-// Coerce seguro a Category
+// Convierte un valor de FormData en una categoría válida
 function toCategory(v: FormDataEntryValue | null): Category {
   const s = String(v || '').toLowerCase();
-  return (s === 'tecnologia' || s === 'estilo' || s === 'hogar' || s === 'otros')
-    ? (s as Category)
-    : 'otros';
+  if (s === 'tecnologia' || s === 'estilo' || s === 'hogar' || s === 'otros') {
+    return s as Category;
+  }
+  return 'otros';
 }
 
 export async function createProductAction(fd: FormData) {
@@ -33,12 +34,15 @@ export async function createProductAction(fd: FormData) {
     slug,
     description: String(fd.get('description') || ''),
     price_cents: Number(fd.get('price_cents') || 0),
-    old_price_cents: fd.get('old_price_cents') ? Number(fd.get('old_price_cents')) : null,
-    imageUrl: String(fd.get('imageUrl') || ''), // si usas images[], ajústalo abajo
+    old_price_cents: fd.get('old_price_cents')
+      ? Number(fd.get('old_price_cents'))
+      : null,
+    imageUrl: String(fd.get('imageUrl') || ''), 
     visible: fd.get('visible') === 'on',
-    category: toCategory(fd.get('category')),
+    category: toCategory(fd.get('category')), // ✅ ahora seguro tipado como Category
   });
 
+  // refresca la lista y vuelve al listado
   revalidatePath('/admin/productos');
   redirect('/admin/productos');
 }
