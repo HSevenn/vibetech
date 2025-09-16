@@ -32,11 +32,13 @@ export default function ProductCard({ p }: { p: Product }) {
           priority={false}
         />
 
-        {/* Overlay con franja difuminada */}
+        {/* Franja difuminada AGOTADO */}
         {agotado && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="backdrop-blur-md bg-black/40 px-6 py-2 rounded-md">
-              <span className="text-white font-bold text-xl tracking-wide">AGOTADO</span>
+              <span className="text-white font-bold text-lg md:text-xl tracking-wide">
+                AGOTADO
+              </span>
             </div>
           </div>
         )}
@@ -48,6 +50,7 @@ export default function ProductCard({ p }: { p: Product }) {
 
         <div className="mt-1 flex items-center gap-2">
           <span className="text-sm font-semibold">{formatCOP(p.price_cents)}</span>
+
           {p.old_price_cents && p.old_price_cents > p.price_cents && (
             <>
               <span className="text-xs text-neutral-500 line-through">
