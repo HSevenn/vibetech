@@ -1,7 +1,7 @@
-// app/productos/[slug]/page.tsx
+ // app/productos/[slug]/page.tsx
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { fetchProductBySlug, publicUrl } from '@/lib/products';
+import { fetchProductBySlug, publicUrl } from '@/lib/products'; // 👈 usamos publicUrl
 import ShareButtons from '@/components/ShareButtons';
 import ProductGallery from '@/components/ProductGallery';
 
@@ -23,6 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const product = await fetchProductBySlug(params.slug);
 
+    // ---- Producto no encontrado ----
     if (!product) {
       const notFoundUrl = `${BASE}/productos/${params.slug}`;
       return {
@@ -47,18 +48,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       };
     }
 
+    // ---- Producto existente ----
     const canonical = `${BASE}/productos/${product.slug}`;
     const title = product.name;
-    const desc = (product.description?.trim() || 'Descubre este producto en VibeTech.').slice(
-      0,
-      180
-    );
+    const desc = (product.description?.trim() || 'Descubre este producto en VibeTech.').slice(0, 180);
 
+    // Preferimos images[] ⇒ las convertimos a URL públicas absolutas
     const imgs =
       Array.isArray((product as any).images) && (product as any).images.length
         ? ((product as any).images.map(publicUrl).filter(Boolean) as string[])
         : [];
 
+    // Fallback: imageUrl normalizado; último fallback: og-default
     const ogImg = imgs[0] || publicUrl(product.imageUrl) || `${BASE}/og-default.jpg`;
 
     return {
@@ -104,8 +105,6 @@ export default async function ProductPage({ params }: Props) {
   }
 
   const url = `${BASE}/productos/${product.slug}`;
-  // ✅ Solo agotado si stock === 0
-  const agotado = product.stock === 0;
 
   const shortDesc =
     (product.description || '').trim().slice(0, 140) +
@@ -116,11 +115,13 @@ export default async function ProductPage({ params }: Props) {
     (shortDesc ? `Descripción: ${shortDesc}\n` : '') +
     `Precio: ${formatCOP(product.price_cents)}\n¿Está disponible?\n${url}`;
 
+  // Descuento
   const discount =
     product.old_price_cents && product.old_price_cents > product.price_cents
       ? Math.max(0, Math.round(100 - (product.price_cents / product.old_price_cents) * 100))
       : null;
 
+  // Imágenes para la galería: normalizamos a URL públicas de Supabase
   const images =
     Array.isArray((product as any).images) && (product as any).images.length
       ? ((product as any).images.map(publicUrl).filter(Boolean) as string[])
@@ -129,23 +130,21 @@ export default async function ProductPage({ params }: Props) {
   return (
     <main className="container mx-auto px-4 py-10">
       <div className="grid gap-8 lg:grid-cols-2">
-        {/* Galería / Imagen con overlay AGOTADO */}
-        <div className="relative">
-          <ProductGallery images={images} alt={product.name} />
-
-          {agotado && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="backdrop-blur-md bg-black/40 px-6 py-2 rounded-md">
-                <span className="text-white text-2xl font-bold tracking-wide">AGOTADO</span>
-              </div>
-            </div>
+        {/* Galería / Imagen */}
+        <div>
+          {images.length > 0 ? (
+            <ProductGallery images={images} alt={product.name} />
+          ) : (
+            <div className="w-full aspect-square bg-neutral-200 dark:bg-neutral-800 rounded-lg" />
           )}
         </div>
 
         {/* Info */}
         <div>
           <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
-          <p className="mb-4 text-neutral-600 dark:text-neutral-300">{product.description}</p>
+          <p className="mb-4 text-neutral-600 dark:text-neutral-300">
+            {product.description}
+          </p>
 
           <div className="mb-6 flex items-center gap-3">
             <span className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
@@ -171,3 +170,4 @@ export default async function ProductPage({ params }: Props) {
     </main>
   );
 }
+        
