@@ -104,7 +104,8 @@ export default async function ProductPage({ params }: Props) {
   }
 
   const url = `${BASE}/productos/${product.slug}`;
-  const agotado = (product.stock ?? 0) <= 0;
+  // ✅ Solo agotado si stock === 0
+  const agotado = product.stock === 0;
 
   const shortDesc =
     (product.description || '').trim().slice(0, 140) +
