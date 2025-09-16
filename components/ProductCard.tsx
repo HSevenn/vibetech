@@ -17,12 +17,16 @@ export default function ProductCard({ p }: { p: Product }) {
   const off = getDiscount(p);
   const img = p.imageUrl || '/og-default.jpg';
 
+  // 👉 AÑADIDO: bandera de agotado (no toca estilos)
+  const agotado = p.stock === 0;
+
   return (
     <Link
       href={`/productos/${p.slug}`}
       className="group block rounded-xl border border-transparent bg-white dark:bg-neutral-900 transition-all duration-300 hover:-translate-y-[2px] hover:shadow-xl select-none"
     >
       {/* Imagen */}
+      {/* 👉 SIN CAMBIAR TUS CLASES: solo insertamos el cartel dentro */}
       <div className="relative aspect-[4/3] overflow-hidden rounded-t-xl">
         <Image
           src={img}
@@ -32,6 +36,15 @@ export default function ProductCard({ p }: { p: Product }) {
           className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
           priority={false}
         />
+
+        {/* 👉 Cartel AGOTADO (sin tocar estilos existentes) */}
+        {agotado && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="backdrop-blur-md bg-black/40 px-6 py-2 rounded-md">
+              <span className="text-white font-bold text-lg tracking-wide">AGOTADO</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Texto */}
