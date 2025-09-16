@@ -15,8 +15,8 @@ export type Product = {
   tags: string[] | null;
   is_active: boolean;
   created_at: string | null;
-  category?: Category; // 👈 nuevo (view featured_products quizá no la tenga)
-  imageUrl?: string | null; // derivada
+  category?: Category; 
+  imageUrl?: string | null; 
 };
 
 // URL pública para un path de Storage.
@@ -39,7 +39,6 @@ export async function fetchLatestProducts(limit = 12): Promise<Product[]> {
   const { data, error } = await supabase
     .from('products')
     .select(
-      // 👇 AÑADIDO: stock
       'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at, category, stock'
     )
     .eq('is_active', true)
@@ -62,8 +61,6 @@ export async function fetchFeaturedProducts(limit = 6): Promise<Product[]> {
   const { data, error } = await supabase
     .from('featured_products')
     .select(
-      // OJO: esta vista puede no tener category
-      // (no agrego 'stock' aquí para evitar error si la vista no lo expone)
       'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at, featured_order'
     )
     .order('featured_order', { ascending: true, nullsFirst: false })
@@ -89,7 +86,6 @@ export async function fetchProductsByOrder(
   let query = supabase
     .from('products')
     .select(
-      // 👇 AÑADIDO: stock (clave para que el cartel se vea en el grid)
       'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at, category, stock'
     )
     .eq('is_active', true);
@@ -98,6 +94,10 @@ export async function fetchProductsByOrder(
     query = query.eq('category', category);
   }
 
+  // 👇 Primero por disponibilidad (stock > 0 arriba, stock = 0 abajo)
+  query = query.order('stock', { ascending: false, nullsFirst: false });
+
+  // Luego aplicamos el orden elegido
   if (order === 'price_asc') {
     query = query.order('price_cents', { ascending: true, nullsFirst: false });
   } else if (order === 'price_desc') {
