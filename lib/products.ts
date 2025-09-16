@@ -15,8 +15,8 @@ export type Product = {
   tags: string[] | null;
   is_active: boolean;
   created_at: string | null;
-  category?: Category; 
-  imageUrl?: string | null; 
+  category?: Category;
+  imageUrl?: string | null;
 };
 
 // URL pública para un path de Storage.
@@ -34,7 +34,7 @@ function firstImageUrl(images?: string[] | null): string | null {
   return publicUrl(images[0]);
 }
 
-/** Últimos productos (para Home) */
+/** Últimos productos (para Home - sección de novedades) */
 export async function fetchLatestProducts(limit = 12): Promise<Product[]> {
   const { data, error } = await supabase
     .from('products')
@@ -61,6 +61,7 @@ export async function fetchFeaturedProducts(limit = 6): Promise<Product[]> {
   const { data, error } = await supabase
     .from('featured_products')
     .select(
+      // OJO: esta vista puede no tener category ni stock; dejamos tal cual
       'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at, featured_order'
     )
     .order('featured_order', { ascending: true, nullsFirst: false })
@@ -94,10 +95,10 @@ export async function fetchProductsByOrder(
     query = query.eq('category', category);
   }
 
-  // 👇 Primero por disponibilidad (stock > 0 arriba, stock = 0 abajo)
+  // Disponibles primero (stock > 0), agotados al final
   query = query.order('stock', { ascending: false, nullsFirst: false });
 
-  // Luego aplicamos el orden elegido
+  // Orden secundario elegido
   if (order === 'price_asc') {
     query = query.order('price_cents', { ascending: true, nullsFirst: false });
   } else if (order === 'price_desc') {
@@ -139,4 +140,47 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
     ...(data as any),
     imageUrl: firstImageUrl((data as any).images),
   } as Product;
+}
+
+/** 6 productos de la vitrina principal (control manual con homepage_featured) */
+export async function fetchHomepageProducts(limit = 6): Promise<Product[]> {
+  // Intento 1: los que marcaste con homepage_featured=true
+  let { data, error } = await supabase
+    .from('products')
+    .select(
+      'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at, category, stock'
+    )
+    .eq('is_active', true)
+    .eq('homepage_featured', true)
+    .order('homepage_featured_order', { ascending: true, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('fetchHomepageProducts error:', error.message);
+    return [];
+  }
+
+  // Fallback: si no hay ninguno marcado, usamos los últimos 6
+  if (!data || data.length === 0) {
+    const fallback = await supabase
+      .from('products')
+      .select(
+        'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at, category, stock'
+      )
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (fallback.error) {
+      console.error('fetchHomepageProducts fallback error:', fallback.error.message);
+      return [];
+    }
+    data = fallback.data ?? [];
+  }
+
+  return (data ?? []).map((p: any) => ({
+    ...p,
+    imageUrl: firstImageUrl(p?.images),
+  })) as Product[];
 }
