@@ -39,7 +39,8 @@ export async function fetchLatestProducts(limit = 12): Promise<Product[]> {
   const { data, error } = await supabase
     .from('products')
     .select(
-      'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at, category'
+      // 👇 AÑADIDO: stock
+      'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at, category, stock'
     )
     .eq('is_active', true)
     .order('created_at', { ascending: false })
@@ -62,6 +63,7 @@ export async function fetchFeaturedProducts(limit = 6): Promise<Product[]> {
     .from('featured_products')
     .select(
       // OJO: esta vista puede no tener category
+      // (no agrego 'stock' aquí para evitar error si la vista no lo expone)
       'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at, featured_order'
     )
     .order('featured_order', { ascending: true, nullsFirst: false })
@@ -87,7 +89,8 @@ export async function fetchProductsByOrder(
   let query = supabase
     .from('products')
     .select(
-      'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at, category'
+      // 👇 AÑADIDO: stock (clave para que el cartel se vea en el grid)
+      'id, slug, name, description, price_cents, old_price_cents, images, is_active, created_at, category, stock'
     )
     .eq('is_active', true);
 
