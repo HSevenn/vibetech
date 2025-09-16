@@ -6,52 +6,51 @@ import { formatCOP } from '@/lib/format';
 
 function getDiscount(p: Product) {
   if (!p.old_price_cents || p.old_price_cents <= p.price_cents) return null;
-  const pct = Math.max(
-    0,
-    Math.round(100 - (p.price_cents / p.old_price_cents) * 100)
-  );
+  const pct = Math.max(0, Math.round(100 - (p.price_cents / p.old_price_cents) * 100));
   return pct > 0 ? pct : null;
 }
 
 export default function ProductCard({ p }: { p: Product }) {
+  const agotado = (p.stock ?? 0) <= 0;
   const off = getDiscount(p);
-  const img = p.imageUrl || '/og-default.jpg';
 
   return (
     <Link
       href={`/productos/${p.slug}`}
-      className="group block rounded-xl border border-transparent bg-white dark:bg-neutral-900 transition-all duration-300 hover:-translate-y-[2px] hover:shadow-xl select-none"
+      className={`block relative rounded-lg overflow-hidden border bg-white transition hover:shadow-sm ${
+        agotado ? 'opacity-90' : ''
+      }`}
     >
-      {/* Imagen */}
-      <div className="relative aspect-[4/3] overflow-hidden rounded-t-xl">
+      {/* Imagen principal */}
+      <div className="relative aspect-square">
         <Image
-          src={img}
+          src={p.imageUrl || '/placeholder.png'}
           alt={p.name}
           fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, 33vw"
           priority={false}
         />
+
+        {/* Overlay con franja difuminada */}
+        {agotado && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="backdrop-blur-md bg-black/40 px-6 py-2 rounded-md">
+              <span className="text-white font-bold text-xl tracking-wide">AGOTADO</span>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Texto */}
-      <div className="p-4">
-        <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100 line-clamp-2">
-          {p.name}
-        </h3>
-        <p className="mt-1 line-clamp-2 text-sm text-neutral-500 dark:text-neutral-400">
-          {p.description ?? ''}
-        </p>
+      {/* Info */}
+      <div className="p-3">
+        <h3 className="font-medium line-clamp-2">{p.name}</h3>
 
-        {/* Precio + descuento */}
-        <div className="mt-3 flex items-center gap-2">
-          <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-            {formatCOP(p.price_cents)}
-          </span>
-
+        <div className="mt-1 flex items-center gap-2">
+          <span className="text-sm font-semibold">{formatCOP(p.price_cents)}</span>
           {p.old_price_cents && p.old_price_cents > p.price_cents && (
             <>
-              <span className="text-sm line-through opacity-60">
+              <span className="text-xs text-neutral-500 line-through">
                 {formatCOP(p.old_price_cents)}
               </span>
               {off !== null && (
