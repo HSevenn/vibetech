@@ -1,4 +1,4 @@
- // app/productos/[slug]/page.tsx
+// app/productos/[slug]/page.tsx
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { fetchProductBySlug, publicUrl } from '@/lib/products'; // 👈 usamos publicUrl
@@ -105,7 +105,6 @@ export default async function ProductPage({ params }: Props) {
   }
 
   const url = `${BASE}/productos/${product.slug}`;
-
   const shortDesc =
     (product.description || '').trim().slice(0, 140) +
     ((product.description || '').length > 140 ? '…' : '');
@@ -127,15 +126,28 @@ export default async function ProductPage({ params }: Props) {
       ? ((product as any).images.map(publicUrl).filter(Boolean) as string[])
       : (publicUrl(product.imageUrl) ? [publicUrl(product.imageUrl)!] : []);
 
+  // 👉 AÑADIDO: bandera de agotado (no toca estilos)
+  const agotado = product.stock === 0;
+
   return (
     <main className="container mx-auto px-4 py-10">
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Galería / Imagen */}
-        <div>
+        {/* 👉 Solo envolvemos con relative para ubicar el cartel. No cambiamos más clases. */}
+        <div className="relative">
           {images.length > 0 ? (
             <ProductGallery images={images} alt={product.name} />
           ) : (
             <div className="w-full aspect-square bg-neutral-200 dark:bg-neutral-800 rounded-lg" />
+          )}
+
+          {/* 👉 Cartel AGOTADO (sin tocar estilos existentes) */}
+          {agotado && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="backdrop-blur-md bg-black/40 px-6 py-2 rounded-md">
+                <span className="text-white text-2xl font-bold tracking-wide">AGOTADO</span>
+              </div>
+            </div>
           )}
         </div>
 
@@ -169,5 +181,4 @@ export default async function ProductPage({ params }: Props) {
       </div>
     </main>
   );
-}
-        
+}    
