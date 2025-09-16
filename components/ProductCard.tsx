@@ -11,7 +11,8 @@ function getDiscount(p: Product) {
 }
 
 export default function ProductCard({ p }: { p: Product }) {
-  const agotado = (p.stock ?? 0) <= 0;
+  // ✅ Solo se marca agotado si stock === 0
+  const agotado = p.stock === 0;
   const off = getDiscount(p);
 
   return (
