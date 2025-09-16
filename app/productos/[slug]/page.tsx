@@ -5,7 +5,7 @@ import { fetchProductBySlug, publicUrl } from '@/lib/products';
 import ShareButtons from '@/components/ShareButtons';
 import ProductGallery from '@/components/ProductGallery';
 
-export const dynamic = 'force-dynamic';
+const BASE = 'https://www.vibetechvibe.com';
 
 function formatCOP(cents: number) {
   return cents.toLocaleString('es-CO', {
@@ -15,71 +15,122 @@ function formatCOP(cents: number) {
   });
 }
 
-function getDiscount(price_cents: number, old_price_cents: number | null) {
-  if (!old_price_cents || old_price_cents <= price_cents) return null;
-  const pct = Math.max(0, Math.round(100 - (price_cents / old_price_cents) * 100));
-  return pct > 0 ? pct : null;
-}
+type Props = { params: { slug: string } };
 
-export async function generateMetadata(
-  { params }: { params: { slug: string } }
-): Promise<Metadata> {
-  const product = await fetchProductBySlug(params.slug);
-  if (!product) {
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  try {
+    const product = await fetchProductBySlug(params.slug);
+
+    if (!product) {
+      const notFoundUrl = `${BASE}/productos/${params.slug}`;
+      return {
+        title: 'Producto no encontrado',
+        description: 'Este producto no existe en VibeTech.',
+        alternates: { canonical: notFoundUrl },
+        openGraph: {
+          type: 'website',
+          url: notFoundUrl,
+          siteName: 'VibeTech',
+          title: 'Producto no encontrado',
+          description: 'Este producto no existe en VibeTech.',
+          images: [{ url: `${BASE}/og-default.jpg`, width: 1200, height: 630 }],
+          locale: 'es_CO',
+        },
+        twitter: {
+          card: 'summary_large_image',
+          title: 'Producto no encontrado',
+          description: 'Este producto no existe en VibeTech.',
+          images: [`${BASE}/og-default.jpg`],
+        },
+      };
+    }
+
+    const canonical = `${BASE}/productos/${product.slug}`;
+    const title = product.name;
+    const desc = (product.description?.trim() || 'Descubre este producto en VibeTech.').slice(
+      0,
+      180
+    );
+
+    const imgs =
+      Array.isArray((product as any).images) && (product as any).images.length
+        ? ((product as any).images.map(publicUrl).filter(Boolean) as string[])
+        : [];
+
+    const ogImg = imgs[0] || publicUrl(product.imageUrl) || `${BASE}/og-default.jpg`;
+
     return {
-      title: 'Producto no encontrado | VibeTech',
-      description: 'No encontramos este producto.',
+      title,
+      description: desc,
+      alternates: { canonical },
+      openGraph: {
+        type: 'website',
+        url: canonical,
+        siteName: 'VibeTech',
+        title,
+        description: desc,
+        images: [{ url: ogImg, width: 1200, height: 630, alt: title }],
+        locale: 'es_CO',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description: desc,
+        images: [ogImg],
+      },
+    };
+  } catch {
+    return {
+      title: 'VibeTech',
+      description: 'Catálogo de tecnología que vibra contigo.',
     };
   }
-  const title = `${product.name} | VibeTech`;
-  const description =
-    product.description ??
-    `Descubre ${product.name} en VibeTech. Envíos rápidos en Colombia.`;
-  const image = product.imageUrl || '/og.png';
-  const url = `${publicUrl}/productos/${product.slug}`;
-
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      url,
-      images: [{ url: image }],
-    },
-    alternates: { canonical: url },
-  };
 }
 
-export default async function ProductPage({ params }: { params: { slug: string } }) {
+export default async function ProductPage({ params }: Props) {
   const product = await fetchProductBySlug(params.slug);
 
   if (!product) {
     return (
-      <main className="container mx-auto px-4 py-8">
-        <p className="text-sm text-neutral-600">Producto no encontrado.</p>
-        <Link href="/productos" className="text-sm underline">Volver al catálogo</Link>
+      <main className="container mx-auto px-4 py-10">
+        <h1 className="text-2xl font-bold">Producto no encontrado</h1>
+        <Link href="/productos" className="btn btn-outline mt-6">
+          Volver a productos
+        </Link>
       </main>
     );
   }
 
+  const url = `${BASE}/productos/${product.slug}`;
   const agotado = (product.stock ?? 0) <= 0;
-  const discount = getDiscount(product.price_cents, product.old_price_cents);
-  const url = `${publicUrl}/productos/${product.slug}`;
-  const waMessage = `Hola VibeTech, me interesa el ${product.name}. ${url}`;
+
+  const shortDesc =
+    (product.description || '').trim().slice(0, 140) +
+    ((product.description || '').length > 140 ? '…' : '');
+
+  const waMessage =
+    `Hola, quiero comprar el producto "${product.name}".\n` +
+    (shortDesc ? `Descripción: ${shortDesc}\n` : '') +
+    `Precio: ${formatCOP(product.price_cents)}\n¿Está disponible?\n${url}`;
+
+  const discount =
+    product.old_price_cents && product.old_price_cents > product.price_cents
+      ? Math.max(0, Math.round(100 - (product.price_cents / product.old_price_cents) * 100))
+      : null;
+
+  const images =
+    Array.isArray((product as any).images) && (product as any).images.length
+      ? ((product as any).images.map(publicUrl).filter(Boolean) as string[])
+      : (publicUrl(product.imageUrl) ? [publicUrl(product.imageUrl)!] : []);
 
   return (
-    <main className="container mx-auto px-4 py-6">
-      <div className="mb-4">
-        <Link href="/productos" className="text-sm text-neutral-500 hover:underline">
-          ← Ver más productos
-        </Link>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Galería + Overlay AGOTADO */}
+    <main className="container mx-auto px-4 py-10">
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* Galería / Imagen con overlay AGOTADO */}
         <div className="relative">
-          <ProductGallery images={product.images || []} />
+          <ProductGallery images={images} alt={product.name} />
 
           {agotado && (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -92,41 +143,30 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
         {/* Info */}
         <div>
-          <h1 className="text-2xl font-semibold">{product.name}</h1>
+          <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
+          <p className="mb-4 text-neutral-600 dark:text-neutral-300">{product.description}</p>
 
-          <div className="mt-2 flex items-center gap-2">
-            <span className="text-lg font-bold">{formatCOP(product.price_cents)}</span>
-            {product.old_price_cents && product.old_price_cents > product.price_cents && (
-              <>
-                <span className="text-sm text-neutral-500 line-through">
-                  {formatCOP(product.old_price_cents)}
-                </span>
-                {discount !== null && (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-green-900/30 text-green-500">
-                    {discount}% OFF
-                  </span>
-                )}
-              </>
+          <div className="mb-6 flex items-center gap-3">
+            <span className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+              {formatCOP(product.price_cents)}
+            </span>
+
+            {product.old_price_cents && (
+              <span className="text-sm line-through opacity-60">
+                {formatCOP(product.old_price_cents)}
+              </span>
+            )}
+
+            {discount !== null && discount > 0 && (
+              <span className="ml-1 text-xs font-semibold px-2 py-0.5 rounded bg-green-900/30 text-green-500">
+                {discount}% OFF
+              </span>
             )}
           </div>
 
-          {product.description && (
-            <p className="mt-4 text-sm text-neutral-700 whitespace-pre-line">
-              {product.description}
-            </p>
-          )}
-
-          {/* Botones / compartir */}
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            {/* Si tienes algún CTA de compra, puedes deshabilitarlo así:
-            <button className="px-5 py-3 rounded-md bg-black text-white disabled:opacity-40" disabled={agotado}>
-              {agotado ? 'No disponible' : 'Comprar por WhatsApp'}
-            </button> */}
-            <ShareButtons url={url} productName={product.name} waMessage={waMessage} />
-          </div>
+          <ShareButtons url={url} productName={product.name} waMessage={waMessage} />
         </div>
       </div>
     </main>
   );
 }
-        
