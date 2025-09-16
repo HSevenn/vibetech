@@ -2,7 +2,7 @@
 import site from '@/data/site.json';
 import HeroSlider from '@/components/HeroSlider';
 import Link from 'next/link';
-import { fetchLatestProducts, fetchFeaturedProducts, publicUrl } from '@/lib/products';
+import { fetchHomepageProducts, fetchFeaturedProducts, publicUrl } from '@/lib/products';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,9 +16,10 @@ function formatCOP(cents: number) {
 }
 
 export default async function Home() {
-  // productos recientes (grid)
-  const latest = await fetchLatestProducts(6);
-  // productos destacados para el slider (por si lo usas luego)
+  // 👇 Ahora controlas manualmente estos 6 con homepage_featured / homepage_featured_order
+  const homepage = await fetchHomepageProducts(6);
+
+  // productos destacados para el slider (se mantiene igual)
   const featured = await fetchFeaturedProducts(5);
   void featured; // evita warning por variable no usada si no la renderizas aún
 
@@ -43,11 +44,11 @@ export default async function Home() {
         <HeroSlider />
       </section>
 
-      {/* Grid de últimos productos */}
+      {/* Grid de productos principales (control manual de 6) */}
       <section className="lg:col-span-2">
         <h2 className="mb-4 text-xl font-semibold">Productos</h2>
         <div className="grid-products">
-          {latest.map((p: any) => {
+          {homepage.map((p: any) => {
             // Usa imageUrl si viene; si no, construye desde el primer path del bucket
             const cover =
               (p.imageUrl as string | null) ??
