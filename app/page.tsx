@@ -18,8 +18,7 @@ function formatCOP(cents: number) {
 export default async function Home() {
   // 👇 Ahora controlas manualmente estos 6 con homepage_featured / homepage_featured_order
   const homepage = await fetchHomepageProducts(6);
-
-  // productos destacados para el slider (se mantiene igual)
+  // productos destacados para el slider (por si lo usas luego)
   const featured = await fetchFeaturedProducts(5);
   void featured; // evita warning por variable no usada si no la renderizas aún
 
@@ -66,14 +65,26 @@ export default async function Home() {
                 href={`/productos/${p.slug}`}
                 className="rounded-xl border p-4 block hover:bg-neutral-900/40"
               >
-                {cover && (
-                  <img
-                    src={cover}
-                    alt={p.name}
-                    className="aspect-[4/3] w-full object-cover rounded-md mb-3"
-                    loading="lazy"
-                  />
-                )}
+                {/* ⬇️ ENVOLTURA mínima para poder dibujar el cartel sin cambiar tu estilo */}
+                <div className="relative">
+                  {cover && (
+                    <img
+                      src={cover}
+                      alt={p.name}
+                      className="aspect-[4/3] w-full object-cover rounded-md mb-3"
+                      loading="lazy"
+                    />
+                  )}
+
+                  {/* Cartel AGOTADO, mismo estilo que en catálogo/detalle */}
+                  {p.stock === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="backdrop-blur-md bg-black/40 px-6 py-2 rounded-md">
+                        <span className="text-white font-bold text-lg tracking-wide">AGOTADO</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <h3 className="font-semibold">{p.name}</h3>
                 <p className="text-sm opacity-80 line-clamp-2">{p.description}</p>
@@ -108,6 +119,11 @@ export default async function Home() {
               </Link>
             );
           })}
+        </div>
+      </section>
+    </div>
+  );
+}
         </div>
       </section>
     </div>
