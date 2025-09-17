@@ -16,11 +16,11 @@ function formatCOP(cents: number) {
 }
 
 export default async function Home() {
-  // 👇 Ahora controlas manualmente estos 6 con homepage_featured / homepage_featured_order
+  // 6 de portada (los controlas con homepage_featured / homepage_featured_order)
   const homepage = await fetchHomepageProducts(6);
-  // productos destacados para el slider (por si lo usas luego)
+  // Slider (si lo usas)
   const featured = await fetchFeaturedProducts(5);
-  void featured; // evita warning por variable no usada si no la renderizas aún
+  void featured;
 
   return (
     <div className="grid gap-10 lg:grid-cols-2">
@@ -47,64 +47,61 @@ export default async function Home() {
       <section className="lg:col-span-2">
         <h2 className="mb-4 text-xl font-semibold">Productos</h2>
         <div className="grid-products">
-          {homepage.map((p: any) => {
-            // Usa imageUrl si viene; si no, construye desde el primer path del bucket
+          {homepage.map((p) => {
             const cover =
-              (p.imageUrl as string | null) ??
-              (Array.isArray(p.images) && p.images[0] ? publicUrl(p.images[0]) : '');
+              (p as any).imageUrl ??
+              (Array.isArray((p as any).images) && (p as any).images[0]
+                ? publicUrl((p as any).images[0])
+                : '');
 
-            // Calcula % de descuento si hay precio anterior válido
             const discount =
-              p.old_price_cents && p.old_price_cents > p.price_cents
-                ? Math.max(0, Math.round(100 - (p.price_cents / p.old_price_cents) * 100))
+              (p as any).old_price_cents && (p as any).old_price_cents > (p as any).price_cents
+                ? Math.max(0, Math.round(100 - ((p as any).price_cents / (p as any).old_price_cents) * 100))
                 : null;
 
             return (
               <Link
-                key={p.id}
-                href={`/productos/${p.slug}`}
+                key={(p as any).id}
+                href={`/productos/${(p as any).slug}`}
                 className="rounded-xl border p-4 block hover:bg-neutral-900/40"
               >
-                {/* ⬇️ ENVOLTURA mínima para poder dibujar el cartel sin cambiar tu estilo */}
+                {/* Envoltura mínima para poder pintar el cartel */}
                 <div className="relative">
-                  {cover && (
+                  {cover ? (
                     <img
-                      src={cover}
-                      alt={p.name}
+                      src={cover as string}
+                      alt={(p as any).name}
                       className="aspect-[4/3] w-full object-cover rounded-md mb-3"
                       loading="lazy"
                     />
-                  )}
+                  ) : null}
 
-                  {/* Cartel AGOTADO, mismo estilo que en catálogo/detalle */}
-                  {p.stock === 0 && (
+                  {/* Cartel AGOTADO */}
+                  {(p as any).stock === 0 ? (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="backdrop-blur-md bg-black/40 px-6 py-2 rounded-md">
                         <span className="text-white font-bold text-lg tracking-wide">AGOTADO</span>
                       </div>
                     </div>
-                  )}
+                  ) : null}
                 </div>
 
-                <h3 className="font-semibold">{p.name}</h3>
-                <p className="text-sm opacity-80 line-clamp-2">{p.description}</p>
+                <h3 className="font-semibold">{(p as any).name}</h3>
+                <p className="text-sm opacity-80 line-clamp-2">{(p as any).description}</p>
 
                 {/* 💰 Precio + (opcional) tachado + badge de descuento */}
                 <div className="mt-2 flex items-center gap-2">
-                  {/* Precio actual (más marcado) */}
                   <span className="text-xl font-extrabold text-neutral-900 dark:text-neutral-100">
-                    {formatCOP(p.price_cents)}
+                    {formatCOP((p as any).price_cents)}
                   </span>
 
-                  {/* Precio anterior más pequeño y discreto */}
-                  {p.old_price_cents && (
+                  {(p as any).old_price_cents ? (
                     <span className="text-xs line-through text-neutral-500 dark:text-neutral-400">
-                      {formatCOP(p.old_price_cents)}
+                      {formatCOP((p as any).old_price_cents)}
                     </span>
-                  )}
+                  ) : null}
 
-                  {/* Badge de descuento con alto contraste */}
-                  {discount !== null && discount > 0 && (
+                  {discount !== null && discount > 0 ? (
                     <span
                       className="
                         ml-1 text-[12px] font-bold px-2 py-0.5 rounded-md
@@ -114,16 +111,11 @@ export default async function Home() {
                     >
                       {discount}% OFF
                     </span>
-                  )}
+                  ) : null}
                 </div>
               </Link>
             );
           })}
-        </div>
-      </section>
-    </div>
-  );
-}
         </div>
       </section>
     </div>
